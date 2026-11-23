@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-KX76XF8R');</script>
+<!-- End Google Tag Manager -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>R y aplicaciones interactivas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Programación en R, gráficos dinámicos y aplicaciones Shiny para el análisis de datos: el lenguaje, el tidyverse, ggplot2, htmlwidgets, Quarto y Shiny, con código que se ejecuta en la página con webR.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400;1,8..60,600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KX76XF8R"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<div class="wrap" data-page="index">
+<header class="topbar"><a class="brand" href="index.html">R y aplicaciones <b>interactivas</b></a><span class="eyebrow">Curso visual e interactivo · Datos e inteligencia artificial</span><a class="al-sitio" href="https://aaramirez.github.io/">← Todos los cursos</a></header>
+<div class="layout">
+<nav class="toc" id="toc" aria-label="Ruta de aprendizaje"></nav>
+<main>
+
+<header class="hero">
+  <span class="eyebrow">Curso visual e interactivo · Datos e inteligencia artificial</span>
+  <h1>De la consola de R a una aplicación que cualquiera puede usar</h1>
+  <p class="lede">R nació para analizar datos y en eso sigue siendo difícil de superar, pero su manera de pensar sorprende a quien viene de otros lenguajes. Este curso enseña el lenguaje desde sus ideas propias, sigue con los gráficos estáticos y dinámicos, y termina con aplicaciones Shiny que convierten un análisis en una herramienta para otros.</p>
+</header>
+
+<section>
+  <h2>Cómo usar este curso</h2>
+  <div class="prose">
+    <p><b>Estado.</b> El curso está en preparación. La <a href="temario.html">tabla de contenido</a> ya tiene los 14 capítulos con sus secciones y sus laboratorios, y está en revisión.</p>
+    <p><b>Para quién es.</b> Para analistas, estadísticos, investigadores y desarrolladores que quieren programar en R o llevar sus análisis a una aplicación web. No hace falta saber R; ayuda haber programado algo antes. El método del análisis (limpiar, explorar, elegir un gráfico) está en Ciencia de datos; aquí se aprende a hacerlo en R.</p>
+    <p><b>Cómo está hecho.</b> Un mismo ejemplo recorre el curso: los viajes de un sistema de bicicletas públicas ficticio, que empiezan como un archivo y terminan como un tablero Shiny publicado. El código corre en la página con webR y las aplicaciones con Shinylive, sin instalar nada: cambias una línea, pulsas «Ejecutar» y ves el resultado.</p>
+  </div>
+</section>
+
+<details class="stage" id="temario" open><summary><h2><span class="pn">Empieza aquí</span> Tabla de contenido</h2></summary>
+  <div class="mods">
+    <a class="mod" href="temario.html"><span class="n">≡</span><b>Tabla de contenido</b><p>Cada capítulo con sus secciones y sus laboratorios.</p></a>
+  </div>
+</details>
+
+<details class="stage" id="parte-1" open><summary><h2><span class="pn">Parte 1</span> El lenguaje</h2><span class="cuenta" data-etapa-cuenta="1"></span></summary>
+  <div class="mods">
+    <div class="mod soon" data-id="r-y-su-mundo"><span class="n">01</span><b>R y su mundo: de S a webR</b><p>De dónde viene R, para qué sirve, cómo se instala y cómo se ejecuta en el navegador.</p></div>
+    <div class="mod soon" data-id="vectores-y-tipos"><span class="n">02</span><b>Vectores, tipos y vectorización</b><p>En R no hay escalares: todo es un vector, y eso cambia la forma de programar.</p></div>
+    <div class="mod soon" data-id="estructuras-de-datos"><span class="n">03</span><b>Listas, factores, matrices y data frames</b><p>Las estructuras de R, de la lista que guarda cualquier cosa al data frame y el tibble.</p></div>
+    <div class="mod soon" data-id="funciones-y-entornos"><span class="n">04</span><b>Funciones, entornos y programación funcional</b><p>Funciones como valores, evaluación perezosa, alcance léxico y la familia `apply`.</p></div>
+  </div>
+</details>
+
+<details class="stage" id="parte-2" open><summary><h2><span class="pn">Parte 2</span> Programar bien en R</h2><span class="cuenta" data-etapa-cuenta="2"></span></summary>
+  <div class="mods">
+    <div class="mod soon" data-id="tidyverse"><span class="n">05</span><b>El tidyverse y la tubería</b><p>dplyr y tidyr como lenguaje: verbos, la tubería `|>` y la evaluación ordenada para escribir funciones propias.</p></div>
+    <div class="mod soon" data-id="objetos-y-paquetes"><span class="n">06</span><b>Objetos, paquetes y reproducibilidad</b><p>S3, S4 y R6, escribir un paquete, probarlo y congelar sus dependencias.</p></div>
+  </div>
+</details>
+
+<details class="stage" id="parte-3" open><summary><h2><span class="pn">Parte 3</span> Gráficos</h2><span class="cuenta" data-etapa-cuenta="3"></span></summary>
+  <div class="mods">
+    <div class="mod soon" data-id="ggplot2"><span class="n">07</span><b>ggplot2: la gramática de los gráficos en R</b><p>Datos, estéticas, geometrías, escalas, facetas y temas, capa por capa.</p></div>
+    <div class="mod soon" data-id="graficos-dinamicos"><span class="n">08</span><b>Gráficos dinámicos e htmlwidgets</b><p>plotly, leaflet, DT, dygraphs y gganimate: gráficos que responden al ratón y se animan.</p></div>
+    <div class="mod soon" data-id="documentos-con-quarto"><span class="n">09</span><b>Documentos y reportes con Quarto</b><p>R Markdown y Quarto: reportes, presentaciones y tableros que se regeneran con un clic.</p></div>
+  </div>
+</details>
+
+<details class="stage" id="parte-4" open><summary><h2><span class="pn">Parte 4</span> Aplicaciones Shiny</h2><span class="cuenta" data-etapa-cuenta="4"></span></summary>
+  <div class="mods">
+    <div class="mod soon" data-id="primera-app-shiny"><span class="n">10</span><b>La primera aplicación Shiny</b><p>Interfaz y servidor, entradas y salidas, y diseños con bslib.</p></div>
+    <div class="mod soon" data-id="reactividad"><span class="n">11</span><b>Reactividad: el grafo que mueve a Shiny</b><p>Fuentes, conductores y observadores: qué se recalcula, cuándo y por qué.</p></div>
+    <div class="mod soon" data-id="aplicaciones-grandes"><span class="n">12</span><b>Aplicaciones grandes: módulos, estado y rendimiento</b><p>Módulos, validación, archivos, descargas, caché y extensiones con JavaScript.</p></div>
+    <div class="mod soon" data-id="probar-y-publicar"><span class="n">13</span><b>Probar y publicar aplicaciones Shiny</b><p>Pruebas con shinytest2, y publicar en Shinylive, shinyapps.io, Posit Connect o un contenedor.</p></div>
+    <div class="mod soon" data-id="proyecto-integrador"><span class="n">14</span><b>Proyecto integrador: el tablero de las bicicletas</b><p>Del archivo de viajes a un tablero Shiny publicado, con todo lo del curso.</p></div>
+  </div>
+</details>
+
+
+
+<nav class="pager" id="pager" aria-label="Capítulo anterior y siguiente"></nav>
+</main>
+</div>
+<footer><span>Curso abierto de aaramirez.github.io.</span><span>Sitio publicado: <a href="https://github.com/aaramirez/programacion-r" target="_blank" rel="noopener">github.com/aaramirez/programacion-r</a></span></footer>
+</div>
+<script src="assets/lab.js"></script>
+</body>
+</html>
