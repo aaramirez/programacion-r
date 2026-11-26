@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="es">
+<head>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-KX76XF8R');</script>
+<!-- End Google Tag Manager -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reactividad · R y aplicaciones interactivas · R y aplicaciones interactivas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Programación en R, gráficos dinámicos y aplicaciones Shiny para el análisis de datos: el lenguaje, el tidyverse, ggplot2, htmlwidgets, Quarto y Shiny, con código que se ejecuta en la página con webR.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400;1,8..60,600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KX76XF8R"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<div class="wrap" data-page="reactividad">
+<header class="topbar"><a class="brand" href="index.html">R y aplicaciones <b>interactivas</b></a><span class="eyebrow">Curso visual e interactivo · Datos e inteligencia artificial</span><a class="al-sitio" href="https://aaramirez.github.io/">← Todos los cursos</a></header>
+<div class="layout">
+<nav class="toc" id="toc" aria-label="Ruta de aprendizaje"></nav>
+<main>
+<header class="page-head"><span class="num">CAPÍTULO 11 DE 14</span><h1>Reactividad: el grafo que mueve a Shiny</h1><p class="lede">La aplicación de Gabriela filtra los viajes tres veces cada vez que Ernesto toca un control, y nadie se lo pidió. Este capítulo abre el motor de Shiny: el grafo de fuentes, conductores y puntos finales, cómo se invalida y se recalcula, cómo controlar cuándo pasa y los dos errores que más cuestan.</p></header>
+<section><h2>Programación reactiva frente a imperativa</h2><div class="prose"><p>La aplicación del capítulo 10 funciona, pero Ignacio Peña, de sistemas, la abrió con los datos completos y notó algo: cada vez que movía el deslizador de la hora, la consola de R se quedaba ocupada un instante más de lo esperado. Agregó un <code>message()</code> dentro de la función <code>elegidos()</code> y lo vio: <b>tres</b> mensajes por cada movimiento. Las tres salidas llaman a <code>elegidos()</code>, y cada llamada vuelve a filtrar la tabla entera. Para entender por qué, y cómo evitarlo, hay que entender cómo piensa Shiny.</p><p>Casi todo el código que escribiste hasta ahora es <b>imperativo</b> (<i>imperative</i>): una lista de órdenes que R ejecuta en secuencia, de arriba abajo, una vez. Si en la línea 1 dices <code>hora &lt;- 7</code> y en la línea 3 calculas un total con esa hora, cambiar después <code>hora &lt;- 9</code> no cambia el total: queda viejo hasta que tú vuelvas a correr la línea 3. Tú eres quien lleva la cuenta de qué depende de qué.</p></div><div class="analogia"><b>Imagínalo así</b><p>Una hoja de cálculo funciona al revés. En la celda B1 escribes una fórmula que usa A1, y desde ese momento la hoja recuerda la relación. Cambias A1 y B1 se actualiza sola; nadie le dice «recalcula». Y si C1 depende de B1, también se actualiza, en el orden correcto. No escribes <b>cuándo</b> calcular, sino <b>de qué depende</b> cada valor. La hoja hace el resto.</p></div><div class="prose"><p>Eso es la <b>programación reactiva</b> (<i>reactive programming</i>): declaras relaciones entre valores, y un sistema las mantiene al día cuando algo cambia. Shiny es una hoja de cálculo para R. <code>input$hora</code> es la celda A1 que escribe la persona; <code>output$grafico</code> es la celda B1 con una fórmula que lee <code>input$hora</code>; y Shiny es el motor que recalcula.</p></div><figure class="fig fig-comparacion" id="11-diagrama-1"><div class="lienzo"><svg viewBox="0 0 900 360" style="min-width:720px;font-variant-ligatures:none" role="img" aria-label="Programación imperativa frente a reactiva: a la izquierda un guion corre de arriba abajo una vez y, si cambia la hora, el total queda viejo hasta que alguien vuelve a correrlo; a la derecha, como en una hoja de cálculo, cambiar la celda de la hora recalcula sola la celda que depende de ella">
+<defs><marker id="c11d1-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="fl-muted"/></marker>
+<marker id="c11d1-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="k-warm"/></marker></defs>
+<text x="20" y="26" class="t t-b">Imperativa: órdenes en secuencia</text>
+<rect x="20" y="40" width="400" height="200" rx="10" class="caja"/>
+<text x="36" y="70" class="t t-s t-mono">1  hora  &lt;- 7</text>
+<text x="36" y="94" class="t t-s t-mono">2  v     &lt;- viajes[viajes$hora &gt;= hora, ]</text>
+<text x="36" y="118" class="t t-s t-mono">3  total &lt;- nrow(v)</text>
+<text x="36" y="150" class="t t-s t-mono k-warm">4  hora  &lt;- 9</text>
+<text x="36" y="174" class="t t-s t-mono">5  total             <tspan class="k-warm"># sigue con la hora 7</tspan></text>
+<line x1="400" y1="58" x2="400" y2="180" class="ln" marker-end="url(#c11d1-m)"/>
+<text x="392" y="210" class="t t-s t-m" text-anchor="end">se ejecuta una vez, de arriba abajo</text>
+<text x="20" y="272" class="t t-s">Cambiar <tspan class="t-mono">hora</tspan> no avisa a nadie: tú decides qué líneas</text>
+<text x="20" y="290" class="t t-s">volver a correr, y si olvidas una, el resultado queda viejo</text>
+<text x="20" y="308" class="t t-s">sin ningún error.</text>
+<text x="480" y="26" class="t t-b">Reactiva: relaciones que se mantienen</text>
+<rect x="480" y="40" width="400" height="200" rx="10" class="caja"/>
+<rect x="500" y="62" width="40" height="26" class="d-inet"/><rect x="540" y="62" width="110" height="26" class="d-inet"/><text x="595" y="80" class="t t-s t-b" text-anchor="middle">A</text>
+<rect x="650" y="62" width="210" height="26" class="d-inet"/><text x="755" y="80" class="t t-s t-b" text-anchor="middle">B</text>
+<rect x="500" y="88" width="40" height="60" class="d-inet"/><text x="520" y="123" class="t t-s t-b" text-anchor="middle">1</text>
+<rect x="540" y="88" width="110" height="60" class="c-tra"/><text x="550" y="108" class="t t-xs k-tra">HORA</text><text x="550" y="134" class="t t-b t-mono">9</text>
+<rect x="650" y="88" width="210" height="60" class="c-apl"/><text x="660" y="108" class="t t-xs k-apl">VIAJES DESDE ESA HORA</text><text x="660" y="126" class="t t-s t-mono">=CONTAR.SI(H:H;"&gt;="&amp;A1)</text><text x="660" y="142" class="t t-s t-b">se recalcula solo</text>
+<path d="M595 150 C600 200 700 200 740 152" class="ln s-warm" style="stroke-width:2" marker-end="url(#c11d1-w)"/>
+<text x="600" y="216" class="t t-s k-warm">cambiar A1 avisa a B1</text>
+<text x="480" y="272" class="t t-s">Declaras de qué depende cada valor; el sistema guarda</text>
+<text x="480" y="290" class="t t-s">esas relaciones y, cuando cambia una fuente, recalcula</text>
+<text x="480" y="308" class="t t-s">lo que depende de ella y nada más. Shiny hace lo mismo</text>
+<text x="480" y="326" class="t t-s">con <tspan class="t-mono">input$hora</tspan> y las salidas.</text>
+</svg></div><figcaption><b>Imperativa frente a reactiva.</b> A la izquierda, un guion de cinco líneas: en la línea 4 cambia la hora, pero en la 5 el total sigue calculado con la hora vieja, sin ningún error. A la derecha, una hoja de cálculo: A1 tiene la hora (morado) y B1 una fórmula que la usa (rosa); la flecha naranja muestra que cambiar A1 avisa a B1, que se recalcula sola.</figcaption></figure><div class="prose"><p>Hay una diferencia importante con la hoja de cálculo: en Shiny <b>no declaras las dependencias a mano</b>. Shiny las descubre mientras corre tu código. Cuando <code>renderPlot()</code> se ejecuta y en el camino lee <code>input$hora</code>, Shiny anota «este gráfico depende de la hora». Si el código lee algo solo dentro de un <code>if</code> que esa vez no se cumplió, esa dependencia no se anota. Las dependencias son las que se usaron <b>en la última ejecución</b>, y se vuelven a descubrir cada vez.</p></div></section>
+<section><h2>El grafo reactivo: fuentes, conductores y puntos finales</h2><div class="prose"><p>Las relaciones que Shiny descubre forman un <b>grafo</b> (<i>graph</i>): nodos unidos por flechas que van de lo que se lee a quien lo lee. En el grafo de Shiny hay tres tipos de nodo, y saber de cuál es cada pieza de tu código explica casi todo su comportamiento.</p><ul><li><b>Fuentes</b> (<i>reactive sources</i>): valores que cambian desde afuera. Las entradas (<code>input$…</code>) son las más comunes; también los valores reactivos propios (<code>reactiveVal()</code>, más abajo) y los relojes (<code>invalidateLater()</code>). No dependen de nada dentro del grafo.</li><li><b>Conductores</b> (<i>reactive conductors</i>): valores intermedios que dependen de algo y de los que algo depende. Se crean con <code>reactive()</code>. Son el lugar para cualquier cálculo que comparten varias salidas: leer un archivo, filtrar, agregar, ajustar un modelo.</li><li><b>Puntos finales</b> (<i>reactive endpoints</i>): lo que hace algo visible fuera del grafo. Las salidas (<code>output$… &lt;- render…()</code>) y los observadores (<code>observe()</code>). Nadie depende de ellos.</li></ul></div><figure class="fig fig-esquema" id="11-diagrama-2"><div class="lienzo"><svg viewBox="0 0 900 430" style="min-width:720px;font-variant-ligatures:none" role="img" aria-label="El grafo reactivo de la aplicación de viajes: cuatro fuentes a la izquierda (input$mes, input$estacion, input$hora, input$barras), dos conductores al centro (datos() depende del mes; filtrados() depende de datos, estación y hora) y tres puntos finales a la derecha (output$resumen depende de datos; output$grafico de filtrados y barras; output$tabla de filtrados)">
+<defs><marker id="c11d2-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="fl-muted"/></marker></defs>
+<rect x="20" y="20" width="230" height="300" rx="10" class="caja"/>
+<text x="135" y="44" class="t t-xs t-b k-tra" text-anchor="middle">FUENTES</text>
+<rect x="320" y="20" width="260" height="300" rx="10" class="caja"/>
+<text x="450" y="44" class="t t-xs t-b k-red" text-anchor="middle">CONDUCTORES</text>
+<rect x="650" y="20" width="230" height="300" rx="10" class="caja"/>
+<text x="765" y="44" class="t t-xs t-b k-apl" text-anchor="middle">PUNTOS FINALES</text>
+<rect x="45" y="62" width="180" height="40" rx="6" class="c-tra"/><text x="135" y="87" class="t t-s t-mono" text-anchor="middle">input$mes</text>
+<rect x="45" y="126" width="180" height="40" rx="6" class="c-tra"/><text x="135" y="151" class="t t-s t-mono" text-anchor="middle">input$estacion</text>
+<rect x="45" y="190" width="180" height="40" rx="6" class="c-tra"/><text x="135" y="215" class="t t-s t-mono" text-anchor="middle">input$hora</text>
+<rect x="45" y="254" width="180" height="40" rx="6" class="c-tra"/><text x="135" y="279" class="t t-s t-mono" text-anchor="middle">input$barras</text>
+<rect x="355" y="80" width="190" height="44" rx="22" class="c-red"/><text x="450" y="107" class="t t-s t-mono" text-anchor="middle">datos()</text>
+<rect x="355" y="188" width="190" height="44" rx="22" class="c-red"/><text x="450" y="215" class="t t-s t-mono" text-anchor="middle">filtrados()</text>
+<rect x="675" y="62" width="180" height="40" rx="6" class="c-apl"/><text x="765" y="87" class="t t-s t-mono" text-anchor="middle">output$resumen</text>
+<rect x="675" y="180" width="180" height="40" rx="6" class="c-apl"/><text x="765" y="205" class="t t-s t-mono" text-anchor="middle">output$grafico</text>
+<rect x="675" y="254" width="180" height="40" rx="6" class="c-apl"/><text x="765" y="279" class="t t-s t-mono" text-anchor="middle">output$tabla</text>
+<path d="M225 82 C290 82 290 102 351 102" class="ln" marker-end="url(#c11d2-m)"/>
+<path d="M450 124 L450 184" class="ln" marker-end="url(#c11d2-m)"/>
+<path d="M225 146 C290 146 290 204 351 204" class="ln" marker-end="url(#c11d2-m)"/>
+<path d="M225 210 C290 210 290 216 351 216" class="ln" marker-end="url(#c11d2-m)"/>
+<path d="M545 96 C610 96 610 82 671 82" class="ln" marker-end="url(#c11d2-m)"/>
+<path d="M545 206 C610 206 610 198 671 198" class="ln" marker-end="url(#c11d2-m)"/>
+<path d="M545 218 C610 218 610 274 671 274" class="ln" marker-end="url(#c11d2-m)"/>
+<path d="M225 274 C420 300 560 250 671 210" class="ln" marker-end="url(#c11d2-m)"/>
+<text x="20" y="350" class="t t-s"><tspan class="t-b k-tra">Fuentes:</tspan> valores que cambian desde afuera (entradas, <tspan class="t-mono">reactiveVal()</tspan>, un reloj). No dependen de nada.</text>
+<text x="20" y="372" class="t t-s"><tspan class="t-b k-red">Conductores:</tspan> <tspan class="t-mono">reactive()</tspan>. Dependen de algo y alguien depende de ellos; guardan su último valor.</text>
+<text x="20" y="394" class="t t-s"><tspan class="t-b k-apl">Puntos finales:</tspan> <tspan class="t-mono">output$… &lt;- render…()</tspan> y <tspan class="t-mono">observe()</tspan>. Hacen algo visible; nadie depende de ellos.</text>
+<text x="20" y="414" class="t t-s t-m">Las flechas van de lo que se lee a quien lo lee: Shiny las descubre solo, al ejecutar el código.</text>
+</svg></div><figcaption><b>El grafo reactivo de la aplicación de viajes.</b> A la izquierda, cuatro fuentes (morado): el mes, la estación, la hora y el número de barras. Al centro, dos conductores (azul, con forma de cápsula): <code>datos()</code>, que lee el archivo del mes, y <code>filtrados()</code>, que filtra por estación y hora. A la derecha, tres puntos finales (rosa): el resumen del mes, el gráfico y la tabla. Sigue las flechas desde una fuente hacia la derecha: todo lo que alcanzas es lo que tendrá que recalcularse si esa fuente cambia; lo que no alcanzas queda intacto.</figcaption></figure><div class="prose"><p>Con el grafo dibujado, la pregunta «¿qué se recalcula si cambia la estación?» se responde con el dedo: desde <code>input$estacion</code> se llega a <code>filtrados()</code> y de ahí al gráfico y a la tabla. <code>datos()</code> no está en el camino: el archivo <b>no</b> se vuelve a leer. El resumen del mes tampoco se toca. Y si cambia el número de barras, solo se redibuja el gráfico, con los datos filtrados que ya estaban guardados.</p><p>Ese es el problema de la aplicación del capítulo 10: <code>elegidos()</code> era una función común, no un conductor. Para Shiny no existía como nodo: cada salida leía directamente las entradas y hacía todo el trabajo por su cuenta. El grafo tenía las fuentes unidas directamente a cada punto final, sin nada en el medio que guardara el resultado.</p></div></section>
+<section><h2><code>reactive()</code>, <code>observe()</code> y <code>observeEvent()</code></h2><div class="prose"><p>Convertir <code>elegidos()</code> en un conductor es cambiar una palabra:</p><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln">elegidos &lt;- reactive({</span>
+<span class="ln">  v &lt;- viajes[viajes$hora &gt;= input$horas[1] &amp; viajes$hora &lt;= input$horas[2], ]</span>
+<span class="ln">  if (input$barrio != "Todos") v &lt;- v[v$barrio == input$barrio, ]</span>
+<span class="ln">  v</span>
+<span class="ln">})</span>
+<span class="ln"></span>
+<span class="ln">output$n_viajes &lt;- renderText(nrow(elegidos()))</span>
+<span class="ln">output$por_hora &lt;- renderPlot(barplot(table(elegidos()$hora)))</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><p>Se usa igual que antes, llamándolo con paréntesis: <code>elegidos()</code>. La diferencia está en lo que pasa por dentro. Una <b>expresión reactiva</b> (<i>reactive expression</i>) guarda su último resultado, como una memoria de una sola casilla, y sabe de qué entradas depende. La primera salida que la pide la calcula y la guarda; las demás reciben el valor guardado sin recalcular. Solo cuando cambia una de sus entradas se marca como vencida, y la próxima vez que alguien la pida se calcula de nuevo. Un solo filtrado por cambio, no uno por salida.</p></div><div class="analogia"><b>Imagínalo así</b><p>Una expresión reactiva es como el pizarrón del menú del día en un restaurante. El cocinero lo escribe una vez en la mañana, y cada mesero que pasa lo lee; nadie vuelve a preguntarle a la cocina. Si el pescado se acaba, alguien tacha el pizarrón (lo <b>invalida</b>), y la próxima vez que un mesero lo necesite, se escribe de nuevo con lo que hay. Mientras nadie lo tache, se lee lo que está escrito.</p></div><div class="prose"><p>Las expresiones reactivas son para <b>calcular valores</b>. Para <b>hacer cosas</b> (escribir un archivo, mostrar un aviso, cambiar otro control, registrar algo en una bitácora) están los observadores:</p><ul><li><b><code>observe({ … })</code></b> corre su bloque al arrancar y cada vez que cambia algo de lo que leyó. No devuelve nada que otro pueda usar: existe por sus efectos. Es un punto final, como una salida invisible.</li><li><b><code>observeEvent(input$guardar, { … })</code></b> separa el disparador del trabajo: corre el bloque <b>solo</b> cuando cambia <code>input$guardar</code>, y todo lo que se lea adentro se lee sin crear dependencias. Es la forma natural de responder a un botón.</li></ul><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln">observeEvent(input$guardar, {</span>
+<span class="ln">  write.csv(elegidos(), "seleccion.csv", row.names = FALSE)</span>
+<span class="ln">  showNotification("Selección guardada")</span>
+<span class="ln">})</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><p>La regla para elegir es corta: <b>si quieres un valor, <code>reactive()</code>; si quieres un efecto, un observador.</b> Usar <code>observe()</code> para calcular un valor y guardarlo en una variable funciona a medias y es el origen de muchos errores (más abajo). Y una diferencia de temperamento: las expresiones reactivas son <b>perezosas</b> (<i>lazy</i>), solo se calculan si alguien las pide; los observadores y las salidas son <b>ansiosos</b> (<i>eager</i>), corren apenas pueden.</p></div><figure class="fig fig-comparacion" id="11-diagrama-4"><div class="lienzo"><svg viewBox="0 0 900 400" style="min-width:760px;font-variant-ligatures:none" role="img" aria-label="Tabla comparativa de las funciones reactivas de Shiny: reactive, render, observe, observeEvent, bindEvent y reactiveVal, con si devuelven un valor, cuándo corren y para qué sirven">
+<text x="28" y="34" class="t t-xs t-b t-m">FUNCIÓN</text>
+<text x="268" y="34" class="t t-xs t-b t-m">¿DEVUELVE UN VALOR?</text>
+<text x="433" y="34" class="t t-xs t-b t-m">¿CUÁNDO CORRE?</text>
+<text x="638" y="34" class="t t-xs t-b t-m">PARA QUÉ</text>
+<rect x="20" y="48" width="860" height="46" rx="6" class="caja"/>
+<rect x="20" y="48" width="240" height="46" rx="6" class="c-red"/>
+<text x="28" y="76" class="t t-s t-mono">reactive({ … })</text>
+<text x="270" y="76" class="t t-s">Sí: se usa como datos()</text>
+<text x="435" y="76" class="t t-s">Perezoso: solo si alguien lo pide</text>
+<text x="640" y="76" class="t t-s">Un cálculo que usan varias salidas</text>
+<rect x="20" y="100" width="860" height="46" rx="6" class="caja"/>
+<rect x="20" y="100" width="240" height="46" rx="6" class="c-apl"/>
+<text x="28" y="128" class="t t-s t-mono">output$x &lt;- render…({ … })</text>
+<text x="270" y="128" class="t t-s">Lo dibuja en la página</text>
+<text x="435" y="128" class="t t-s">Ansioso, si se ve en la página</text>
+<text x="640" y="128" class="t t-s">Mostrar un gráfico, una tabla, un texto</text>
+<rect x="20" y="152" width="860" height="46" rx="6" class="caja"/>
+<rect x="20" y="152" width="240" height="46" rx="6" class="c-apl"/>
+<text x="28" y="180" class="t t-s t-mono">observe({ … })</text>
+<text x="270" y="180" class="t t-s">No: hace un efecto</text>
+<text x="435" y="180" class="t t-s">Ansioso: cuando cambia lo que lee</text>
+<text x="640" y="180" class="t t-s">Efectos que dependen de varias cosas</text>
+<rect x="20" y="204" width="860" height="46" rx="6" class="caja"/>
+<rect x="20" y="204" width="240" height="46" rx="6" class="c-apl"/>
+<text x="28" y="232" class="t t-s t-mono">observeEvent(input$b, { … })</text>
+<text x="270" y="232" class="t t-s">No: hace un efecto</text>
+<text x="435" y="232" class="t t-s">Solo cuando cambia input$b</text>
+<text x="640" y="232" class="t t-s">Responder a un botón: guardar, avisar</text>
+<rect x="20" y="256" width="860" height="46" rx="6" class="caja"/>
+<rect x="20" y="256" width="240" height="46" rx="6" class="c-red"/>
+<text x="28" y="284" class="t t-s t-mono">reactive(…) |&gt; bindEvent(input$b)</text>
+<text x="270" y="284" class="t t-s">Sí, como reactive()</text>
+<text x="435" y="284" class="t t-s">Perezoso, y solo tras input$b</text>
+<text x="640" y="284" class="t t-s">Un cálculo caro que espera al botón</text>
+<rect x="20" y="308" width="860" height="46" rx="6" class="caja"/>
+<rect x="20" y="308" width="240" height="46" rx="6" class="c-tra"/>
+<text x="28" y="336" class="t t-s t-mono">reactiveVal() / reactiveValues()</text>
+<text x="270" y="336" class="t t-s">Sí: v() lee, v(x) escribe</text>
+<text x="435" y="336" class="t t-s">Es una fuente: no corre</text>
+<text x="640" y="336" class="t t-s">Estado propio: contadores, selecciones</text>
+<text x="20" y="370" class="t t-s t-m">Color de la primera columna: <tspan class="k-tra t-b">fuente</tspan>, <tspan class="k-red t-b">conductor</tspan> o <tspan class="k-apl t-b">punto final</tspan> del grafo.</text>
+<text x="20" y="390" class="t t-s t-m">Regla práctica: si necesitas un valor, reactive(); si necesitas un efecto (guardar, avisar, cambiar algo), observe.</text>
+</svg></div><figcaption><b>Las funciones reactivas, lado a lado.</b> Una fila por función, con su papel en el grafo por color (fuente morada, conductor azul, punto final rosa): si devuelve un valor que otro pueda usar, cuándo corre y para qué sirve. Léela por columnas: las dos filas azules son las únicas perezosas y las únicas que devuelven un valor calculado; las rosas existen por lo que hacen.</figcaption></figure><div class="lab" id="11-lab-2"><div class="lab-title"><span class="tag">Laboratorio</span><h3>Con y sin <code>reactive()</code>: cuántas veces se lee el archivo de viajes</h3></div><p class="hint">Una aplicación con dos mitades que muestran lo mismo: viajes, mediana e histograma del barrio elegido. La de la izquierda llama a una función común desde cada salida; la de la derecha usa dos <code>reactive()</code>: uno que lee el archivo y otro que filtra. Cada mitad cuenta cuántas veces se leyó <code>viajes.csv</code>. Cambia el barrio y mueve las barras, y mira qué contador sube.</p><style>
+[id="11-lab-2"] .c11l2-marco iframe{width:100%;height:640px;border:1px solid var(--line);border-radius:8px;background:var(--card);display:block}
+[id="11-lab-2"] .c11l2-estado{font:500 .85rem var(--f-display);color:var(--muted)}
+[id="11-lab-2"] .c11l2-cod summary{cursor:pointer;font:600 .85rem var(--f-display);color:var(--accent)}
+[id="11-lab-2"] .c11l2-cod pre{margin:6px 0 0;font:.78rem/1.5 var(--f-mono);white-space:pre;overflow-x:auto;max-height:360px;overflow-y:auto;background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--c-red);border-radius:6px;padding:8px}
+[id="11-lab-2"] .btns{align-items:center}
+[id="11-lab-2"] pre,[id="11-lab-2"] code{font-variant-ligatures:none}
+[id="11-lab-2"] .btns a{font:600 .85rem var(--f-display)}
+</style>
+<details class="c11l2-cod"><summary>Ver el código de <code>app.R</code></summary><pre>library(shiny)
+library(bslib, warn.conflicts = FALSE)
+
+source(&quot;limpiar.R&quot;)
+estaciones &lt;- read.csv(&quot;estaciones.csv&quot;)
+
+# Dos contadores de lecturas del archivo, uno por versión
+lecturas &lt;- reactiveValues(sin = 0, con = 0)
+leer &lt;- function(version) {
+  # isolate(): sumar al contador sin volverse dependiente de él
+  lecturas[[version]] &lt;- isolate(lecturas[[version]]) + 1
+  v &lt;- limpiar(read.csv(&quot;viajes.csv&quot;, na.strings = &quot;&quot;))
+  v$barrio &lt;- estaciones$barrio[match(v$estacion_origen, estaciones$estacion_id)]
+  v
+}
+
+ui &lt;- page_sidebar(
+  fillable = FALSE,
+  title = &quot;¿Cuántas veces se lee viajes.csv?&quot;,
+  sidebar = sidebar(
+    selectInput(&quot;barrio&quot;, &quot;Barrio de origen&quot;, sort(unique(estaciones$barrio))),
+    sliderInput(&quot;barras&quot;, &quot;Barras del histograma&quot;, 5, 30, 12),
+    actionButton(&quot;cero&quot;, &quot;Poner los contadores en cero&quot;)
+  ),
+  layout_columns(
+    card(card_header(&quot;Sin reactive(): cada salida lee el archivo&quot;),
+         h4(&quot;Lecturas del archivo: &quot;, textOutput(&quot;n_sin&quot;, inline = TRUE)),
+         textOutput(&quot;viajes_sin&quot;), textOutput(&quot;mediana_sin&quot;),
+         plotOutput(&quot;hist_sin&quot;, height = 180)),
+    card(card_header(&quot;Con reactive(): se lee una vez y se comparte&quot;),
+         h4(&quot;Lecturas del archivo: &quot;, textOutput(&quot;n_con&quot;, inline = TRUE)),
+         textOutput(&quot;viajes_con&quot;), textOutput(&quot;mediana_con&quot;),
+         plotOutput(&quot;hist_con&quot;, height = 180))
+  )
+)
+
+server &lt;- function(input, output) {
+  # Versión A: una función común, pero cada salida la llama por su cuenta
+  del_barrio_sin &lt;- function() {
+    v &lt;- leer(&quot;sin&quot;)
+    v[v$barrio == input$barrio, ]
+  }
+  output$viajes_sin &lt;- renderText(paste(&quot;Viajes:&quot;, nrow(del_barrio_sin())))
+  output$mediana_sin &lt;- renderText(paste(&quot;Mediana:&quot;,
+    format(round(median(del_barrio_sin()$duracion_min), 1), decimal.mark = &quot;,&quot;), &quot;min&quot;))
+  output$hist_sin &lt;- renderPlot(hist(del_barrio_sin()$duracion_min,
+    breaks = input$barras, col = &quot;#7a3fc4&quot;, border = &quot;white&quot;,
+    main = NULL, xlab = &quot;Duración (min)&quot;, ylab = &quot;Viajes&quot;))
+
+  # Versión B: dos conductores; el archivo no depende de ninguna entrada
+  archivo &lt;- reactive(leer(&quot;con&quot;))
+  del_barrio &lt;- reactive(archivo()[archivo()$barrio == input$barrio, ])
+  output$viajes_con &lt;- renderText(paste(&quot;Viajes:&quot;, nrow(del_barrio())))
+  output$mediana_con &lt;- renderText(paste(&quot;Mediana:&quot;,
+    format(round(median(del_barrio()$duracion_min), 1), decimal.mark = &quot;,&quot;), &quot;min&quot;))
+  output$hist_con &lt;- renderPlot(hist(del_barrio()$duracion_min,
+    breaks = input$barras, col = &quot;#7a3fc4&quot;, border = &quot;white&quot;,
+    main = NULL, xlab = &quot;Duración (min)&quot;, ylab = &quot;Viajes&quot;))
+
+  output$n_sin &lt;- renderText(lecturas$sin)
+  output$n_con &lt;- renderText(lecturas$con)
+  observeEvent(input$cero, {
+    lecturas$sin &lt;- 0
+    lecturas$con &lt;- 0
+  })
+}
+
+shinyApp(ui, server)
+</pre></details>
+<details class="c11l2-cod"><summary>Ver el código de <code>limpiar.R</code></summary><pre># La regla de limpieza de los viajes válidos (capítulos 04 y 05), en R base
+limpiar &lt;- function(v) {
+  v &lt;- v[!duplicated(v), ]                       # duplicados exactos
+  v &lt;- v[v$estacion_origen != &quot;E99&quot;, ]           # movimientos del taller
+  v &lt;- v[!is.na(v$fin), ]                        # bicis sin devolver
+  v$inicio &lt;- as.POSIXct(v$inicio, tz = &quot;UTC&quot;)
+  v$fin &lt;- as.POSIXct(v$fin, tz = &quot;UTC&quot;)
+  r &lt;- v$estacion_destino == &quot;E17&quot; &amp; v$estacion_origen != &quot;E17&quot; &amp;
+    v$inicio &gt;= as.POSIXct(&quot;2026-05-04&quot;, tz = &quot;UTC&quot;) &amp;
+    v$inicio &lt; as.POSIXct(&quot;2026-05-18&quot;, tz = &quot;UTC&quot;)
+  v$fin[r] &lt;- v$fin[r] + 3600                    # el reloj atrasado de E17
+  v$usuario &lt;- tolower(trimws(v$usuario))
+  v$duracion_min &lt;- as.numeric(difftime(v$fin, v$inicio, units = &quot;mins&quot;))
+  v &lt;- v[v$duracion_min &gt;= 1 &amp; v$duracion_min &lt;= 720, ]
+  v$anio_nacimiento[v$anio_nacimiento == 1900] &lt;- NA
+  v
+}
+</pre></details>
+<div class="btns">
+  <button type="button" class="primary" id="c11l2-abrir">Abrir la aplicación (carga R en tu navegador · tarda unos 30 s la primera vez)</button>
+  <a id="c11l2-tab" href="https://shinylive.io/r/app/#h=0&amp;code=NobwRAdghgtgpmAXGKAHVA6ASmANGAYwHsIAXOMpMAGwEsAjAJykYE8AKAZwAtaJWAlAB0IdJiw71OY3AAIA7iwgZiEAGZ0CpTrIC8sgGIBBADIBlAKLCIIzkQCujAnHZCatGKlotsb63E5SKAJaEgDZAB4AWllGOCgAExVOADdXMACgkLDOZJS-EREAYlkAESIdVSCEojidBLhZajgtRyh6uGpZFgJeFKI5ewgiWVRa2RS4Rk5aAGebURbSNp1o2PitWkmANShqewCuPj1ZAAY5VRPT62apyJi1Ic2Sdknp0IgBWRARWVkS2h2ahQcjsASIWScewwFjdLpVRLjGYQCZEahvTiNBqoCgJWgUciyBqyACX1F+TSWK2AwAxHwAuvT7rJAWiQS5mq1mJwaXSSIyvgBqWQARgpKWZdE83kY7DiiTy6RS3gAVgE8m45NAMIFGHwAOY6fRuPzWP4pAAk9BYepGa0ywQ+AStNtCwBhpF6rwtDuyEAA+rVaPqKHJfU7OD7Ao6SP7aAkBPTxSIAL6FCD2WjM1BQEP+mYNa2yilqWjUYH0ZonYzmCy4CmkWikKvGsAAfoAwvYAIdkdoTFrhTGUxrKqBq3IEVIAfk1FILcCLJwXRdcKL+kM6SwAkhBUPZSOki7bNbI3AAhV0jYlBkM2PCQ2qHoa0ACOB3Y4ZyLsYtoE--rdc-mkeMpl3fdDzcY92lPC8bX7Boul4QIiH1ZgYVPABWOQAGZzlFAAmARAI3bpnggc8D1IF43GcRgiFgsAAAUwkYJoKlkBEajqWQKE4qYGLAM1ZGIilgVYBxSH9Yh9hgCBODXUiCBYBJ2GUxgEn9bh4gaYswDMY55U2SYwQhZSEigSE9njSzbl4roej6QTRKA0i-m4AAWdITCpbkiU6bonCciFT3IAAPUgAHkDwg9IA2RU8+DoCBGn0AAVLAAFUrBctzSPCqKYoPJVVQCfM+D8OQCui0hYrceA8SgaByvvXK8r+VBqCIQrauKtxkKkhKH204NuFIE4RQADmuNq-nU1T5q0nSpnSDsSHWYJGxM8FNxHWQhksyYAC9ZFYXbiE8FhyEqil2s87zfIQgLHK2IgQofaqisgyBpJIRLRD4VLZAy7KANuvLPt676xwnX7WqquAIpquqwAa7xmtUG7XLczruuRvqwAGuHTxG-Uxom6b-wpaxrFsKY3mZR4IHI9g+AguRJIgr4fnXEptimGZ5lkIwIQO2QmZCIWLoAL4gOQcXozjEkszhrIsppbOBGFRiRexOIOPsKUQ-1j1CFrGaeRsXm58GJTWW49KG4TzVpH9bT0fQ2YPN3QjkJN1zTddOe9mGyuRZk4ggXS0sRw8c0CFw3G2UrOEQU8IHo+R2GN02iBasF-2E4PSAtNGmqgc21kj6PY-YePQTcABZOBGugNO8HBtRag9OUHCj9gy4gbPOhNq984EC0EjaP1-RgPhiNFBeGhCGFqAwGFGAAaxOOchLkeqKqEouvotInw6r3EpiYrrDwG4fqFH38zeRMFJ+nj5Z74EiNyYeJN6NFke5vbQU4BcNEO8wBFAAOxQBwmoAgHlTz0FqLpCB8heDXQ7q5GExx9AADlMomBMHIMKFYIGlHfkLAe89TysDIa2ZO44AimnTH8PmAs5gonPBCGolQSBTy0LUAIABueygVeivVkMMfyOIo5YkaBAA0YsCTMAshSF6-QI4bC2hyOAK1aJ-SPkbEeuctGbS2C4DRRAwTACsa-UxuhPZAJLrnP2x8oYWlDpwOGWi5GMBjhFOu7QG5gEYROduWpM730fraAuVMg4n0HhXS4F8-EBLjsExOYBm6tygBEzu3cQS9yGKpQe0Tc6vynswGec9PhyBFEvFoHg9jrxYNvVs9Y95nlRofeJfxi6n0BFJFJMRq5XxvuwO+OcryVPfrGWp38-i-ygP-E4XsXHwVAZxcBrZoGwPgYgh8yCNJ3FbOgpscA5zYKgLg2QBCiEkPod0ih1TOGyGoZ8WhTyk4pxYQsfpJ94rHFSTXQJnJljcgtMidxEELQBhGesNJtdwUrAtKoIuUh6ZwAsJMMgrNnFooEnIHmpEUWQvPjEU44MyXtDRetNYVKA7WEDrYXg-AjDoHYJmOQmJGBvGsGAFMuBwDQHgFQKUXgfA4HwFUAkVASgmEsnEfUwJ-JNA8F4OAR1LLEi6joLxExux0F4e85SqAAC3yw9VnA8qdM4mEF58SwLIa0mIRASplBbZmVsh4pBtuuO2MQUjAAAIRT06rQZS5BVJ+r9u1eN8aSjhs0IiHQiNNoVHFMyYNlovwBlvHxENrYLAAE4S2niZAm-4sgYBEGVHPAkHFEKyCCOWKYWa1jBpDYCDA0BvSljqbIStVaR3VvoJGwEkJjgNH6OidtAaLR8AnXaGI7QMBMUimYbcAANLQ3ol3ZCqidVsmU0odgKAugdzI10bq3buw8loB1Hogae89QkKRsU7VGLIH8GiBD4CMRx3SLAiigW4WQAAyCY36Yz5r1HeWQRbgOgfAxB22i7FHZFkAAPn0DezdO691uAIqcAiAA2KIpxMKUcOc+k9Z6-CQfQwe0IkRui5FvYR76JHyOUeo1NUKx7umvoveaC0A7gCMCZF+iTUnZDChwmR04pxR2JrEXELqKpuikG5IiNVIGwMLvsFCFgrG1jUS6vIFaOmPDyAUpaYz9hTNED6dBqpsHP4ojWGujM8A9QEGzrQNQahGzwH7V-aDLGBj7UUdoCBtTOB-PNNm127manHFw6KSDbm5kBlqZEfQUCSN+3FBaJqZtoAr3xGQIgrtyt50qx4ar1EPaihLcp6TMQ8FGGTBAQOgrhWQFgAgZAXi8h4EICQcglBRulTjAkXAUXcBPrzYGeDoZVt-sbMMXA46QjzdwI2MYJsJ24Ec853A9X-SNYbTVkQIplPKYIh5XAPGKOnBwpRkUZwS2IBFL9zCZHXukfe590433Ti-Y8r9vCuALAERwnDqjuBzwijIyW3A8ACC9kjVAS7yDoA1GB6cRBEAHvKZwuR4HvGPtfba4gDymE-tA7e5RsH32SOIFOJNP7BEkcijhwRPn54CKYRe50EkWh-N46gATxEuB-sloIvdx7HklPU9B5RgiZwefPcQDhKBGu2da51-rpn3O4f-aR0D1Hk0+dY5x8pfHJB5f-cmoZ8nJOoGI9Z7T0jpuDf67577sH2vucM5FMz-nSPsKo7LZjloju8dEGUjMF31BAKe8wlAgXIeTcig8n9wvyO8-+4L4gPXgOY-W5RwRb3uAJdS9x7gFP7QPh7Ez49zCk1sKl+1+XsXf3JpG79-3pnIpI8EQxyBvnIGMci7Rwn7HmGZdy6J4rnCKvlPd8N330U5vTiIEwucPfIpx+6+n8j+H5wRdkYF43mzTvW9p+gBnrfpx0fB5B8bsvUCj8EQrxP2-1H1FD-0By5wFwsCv3B1rzI2Hwf2l2d0JwGBIxJ3fygUwi-xp1D1FAvy5132AJwP+3wIZ3OBA2HxA0RxFw8kNwQOb1lxd3XzLVJ090mjI170ILZzOD-1FyPw4OwK4NOD-0p310NygMRwMxRwLxewdxXyQNdxLSgXLTJ0exLTIywM1w+1N0wL+x904K0MhxIOU0F0gMhxR3B2H1kPoLXwGEVw92UxFHI1z30NtQ-wgKPz0IEJJzODIz+0jw8he3h1MPnyn3ODoKdwYOQIV0UOUPJxFEp2cK8NcJ4JwgZxe1L2SIr18I8gkJgKgOF25wFysIiJsOiJLRYIcLvxZxcNAKDwgJHzB1tVA3118JwgoI-yR2H1Ryt2KNX0YNsLLTFBUPBygRJwaJo3p1I1IPGO8OILPyyKR0CKmlrztwb2oEl0fz6KiMV0wi31A0XwyPpxwkLwImH0OM5yoy5zILMKgJe3PFI3t0TzkMiPl1QM32GKmmWNL0wm4JaKuJmJ+KEI8I8MF1yJt3Bwx16PkKYKgXsIsMmnSP0MBJ5xwlSMcIBJ+y51SMU0tyB3h2F1A0RyhOf3bzf2GJIzUIxOaI8gAO7ypL-2hwryWMvy6Lr1oPWKbxKP6LKLhKF1hJmLI1+OPy5wx1L0FPD3mOz0t0CKEKkKVyXyT2hIGOmi3yF3dwFNN0uMwn4M0PFJ5wny5woMXygNj2ez53CK2IUMmliKexpJ1J-0FKmgryh0RK8MdN+yBI8naLELP3MLFwVOeNKLdwqNI21PtL9ygVFH8NSOexmMjINMwgB1nwe0WL9OwihJeKYPd1VLvzOP0PjLRKh0SM0PjOL0jxwkv1MIFwX3TKeObxJPT07xB0mk8JLNFELxyOdLjP3y5wAIn0tyNPBIwIDOsO5P+yUNVJz3DLB3jKZ14PRNL1nKPxOLxIIkgLXPMI6OJNT1JKbKn35NL0mlFFSPAMZxmKPPL1OP+PxKRyoInxkLrK5O2MUN2OGJwjR1dM0JLV+MvIIK8O-KBOOIrwkI3KgPn0cKBwzNKNQMmi31RLGNL2-Iewj31yAP-NFEP27z+zEKvytxF0wkRwtJbx3MbLgrwjzPQuQsZ2XJmKQswuxOwkoMtxvw-0eOX1HOfKgVgrfJyI0J-yQt8O1KPzQq-NqMcIZxZNvPMMpKgrHJiLgsZ2LP4rEsj2P1otqKAraOr2vz9MN1kufOtIUvj0QtqOzyH3UqdOIPfKkqYpFyKzWI2MQMzIGLLTgumlFM4IeyjIkpFPGK8oTJh1yOTJtwR2wiIucuJ0ZXJw8kVz8u+3iIZx50TLivbIrySplLxI6O6IfPYqfxItfybJpMpxSrRwZ18NFxKsEpOPaIkMXxFwRIcs5MtKzKGOirr2qIEIn1wKuN7JKt10n0v0rNr2K30qtNauUxyOsrzy6qFyyKj2mo5wAM0sgONOR1txysVIiuDK3xyIPM8rDz-3mJL32t+NRL+zIOWKgJt1Aw2sDLkqgTIx2q4oos10cPpyvI3Omv7yTPqJn1xKkOOJHLyrb1IuGK9N9Ompwh8POr+w8s6qhrcL1xpLh3j3yNrxLTCo5M2NwAVjsAKq30wLMMhtqMZKms8qhqdMAuuMYrMJFy0vCqDLLWV2GIIuRumsyMMIQs8syMUy50YqF3+oXyKMfOaoGO9wJuOL-NetcP1Mnw6ultN051jMkPEPRsxscvrPyo7wJpyPluNwL28sZK5s6qaNUsL0wKR1nzGNRy0u3JBvxpZrVyUtpwNvErmM-P1qaIAIRz8O0pgPuPlNGqJzeJ1vYL8q9tQoj3DsIgZ1SLV1TJA1j1irtpf21pZswL1pdqaOxNSKJu5uPLSL4OYqkvuI+yBtFrKO4vJ0B0BvZp7JpKjrrtKsAqWIuruIn3OBTt3IJvaz4pdp+PLzcOSumoHpOJPOnwFskNv0IqxsQIbIdvJ3YKp2msjKBPmJwmnKiFA1+I8kP1wpWsN3uLv3LqVOiMmiruUzIyvs3u3qor7Mzs+1vsj2UzSO0viNr0wnv1ns1vtrTsXtGJev1oLOAv-z8uAeouh0txWtZK9Mauxvnr-svqKw9pdtLL8P10AdQdSorKLqYpAzuI-1up-tTrJMXvPofq3vjLAMOpEqAe6o+wwf+tuOGvZI1uBpIabPR13rAe6s-vms8vjI9MLxTKgKNK6InzYs2sZpVOGNGJgOmqPKHv1NoZdsUZ4JRKWMyvBORqDpQMey3wAYoamkxMMIqoUcxK9POsFytvEcgd0bKOZvJxz3kc8ovL3t8Jcc6rcd0OvNI2rwDqIfYe7tkYgr8ovIAJfs-rCZjvfIZ0Yt9MTtgPgO-qCdBqccwJQcfror+3HzhteuybVwZx9NqoIeWPsbdxtKEPUJvqQqZz4bpOmoEt51ENBJMNgNYaatPrdyiuUy4tgbzxI2hrMotwGZUzXu9qWNquusX3KbLVfKcbUJUc+0GYSsDzJoEJWbjtaMyoPvRo6fga1tIeU2mk8c1xWZ4MnyluN3Odjq5xlJwurNA0gpFq6ZLWzOGOmi0tGfoYAP6c4JWd12L1XOTPAuHNmdco+cIfGIBf11+xTO+adL4eKuYcSdR2MNmdhK30mjR03rXO8pfsgYGfisjwSuSpA2uKoPIxnrYeT0OabOxZLWduWeJbKsbv+fir7J5xuJEbwsh2Ftytpd-qOe5yU0yaiCFxjqEuXv+f7zRPLMmej3uPjvBfePJzYNlIGf71pK5cweWdldhemJAzxLqopJPoQeFbYKgTFYlfLw3pos1dSp0JyKYaytF32acugv0Y+YwLyeuf72EN+audpxta5e9uuONcPrXKJJea2sULhN7tbOuYpuxKSqWfFYpuEcPx5eTIKNAzNbpa33axLUTeDYptaJRL7uWbLeEt0Jddjyo07pefNabKV3hf+Ypp5wbthwGYpo9JJZwunzwrP0hJjcZuLcLbdehahs5yEpxJ7dkDXPQatz+uYdR2VdHe5NQPmeU3KLLoGaaKZxwe1OhYPaPwZPaJWvbrI2jYFeIqFZbYyZPYXefv8N9eDdtUXfXuNe9Nr3RY3YMtVZ3bt1xdHtEIryZfFdA9POTP5oKPsq7rSaA+Hv+YHvKqWsrcg9FHLdAaust3n0h2edvdja4pVwezXLfeWcdMwq5Yg-I3xb-wt3ILafuIevzfvdI9I3soGcdLjt+yn2hcdJOMzct3idNI3KIubY46nxLco9SqvLzo2cE7iaLyR0HfEY3PBccfBw+w6O457KBP470-XrjrEIR1U4-vdeIeCYewe1hNxbQbwgWIGbQb4b8aNaR0jbYLgbnoLZUIezYJk-Faof12foobr26qvIL06MtyoO51rKI+ka04eyVzC-jMBdrec+6raIrxselNryUO844qtIvokY1f+YvJzqPzC4q5rdRLfvBMBvBfGokYOPK4LpirN2hYvKBevMnotxFypwZrkohZs8cIIq69SsReq+waWuuPXMpatcK6fKtMA4kYaoGe68SuEom6Ot+atvXJvwe3i6keG5tIn29zTbwkxLdt1aiCu8MN5uKxXdlIG-NJSYrtQIqPO573GKu-EsMPG7zz+6WvLKNIefMJbLY44dI6mhoN+5U3XqWtu7+7qflbfvrYtwQ4XvBymgtqB4R6Z07Odfx6w5AdgdVtVte6W8Feh786mjgPh9J94OMJJ9Kt5qrygOgdr2RqG+fPHb85I1rs4L+7hY9KDc+xF4Z21ei7RtR2PtmfeZs5I3R1+4h18PmIFqB7V+BLyPfqY6VckbuqiJDoF+e3F7u5Zc5sC-fO8rOq0qY-wakLPKx8QccPIzFZt4TO2dV5jvL3RNEcFscL0qbd86V6K2do8jp2aL9-DMj-Bw0vLMvxlPw4qvBbO6nz+Zpzj7Dw0YryDez9N0KbUrwbWscP5ZO755K7wjrxHwL-++odr-zz7Ofp9LU-MLDoV+3fiNs8b7LznPKvz-z0J77PicyvreKpd6OfiPfLfbj4RvKr45Qbn+hsc7c7zanv+xvYr4UInL89RNON7-n6P111j8EIY7jsCKe6HYK-sa3dI43tWN9zj9cOyMLwN175f6q8Suj0d9R1GJPtjblF7+GBTOs-0lYA5Z+ExBKj7WPZBEROUhevJP07wF54ig-KjAXUMJtss+fGAus0QqqJNV2VGY7nIUk5+ciqfdOPgPXNxLUS2lAnsrEzpLucA+IuWUkgNI40kyMS-HAfMUsaa9gCdA0qpZQuqz4zO9xVYgr0epkC8IaAgejwQ7IUDuBYBQ-DiRvKc8nehHbfkwSvrsCrWXAoQhYzqa0DKMq9KHEWRl6usMa1PO9rTxs7Q5uGT-YwRpVpKQD9BzRLChbRL4hEw6vPBQkAL87H51CvfSMkrTRJ6DghygsAkFXM4i55SPgpgu1lI7H4fuDg7nNDUEEqM4+ijbIlVUtxW0QqxVOIcqVW6f0+B2A1IWvRjIuC1GNbZdv7yyqb8ABY7ErgRSiYpCLy6vWknoPaFgd7etQ8CuqTYH+DFMmDTIaT0sYs9+BlGC8gx2EZLEcKBJA-oMJs7Z4JhZQgCjDhhwR9KM6w5cjRVLSX4QqsDIirjUQ5o4HCjfLym4TXoZCt6YzDoVL2satM0WgTD7sc1I6isbhlwmhthQuFjMUix-S3PMKkJl0FeX3JTP-wcFfD9c5tUAbcNNwGl+OK7AWgN3FzvdXmfgmzuCK4FQiOurXbATiKSpW1JKcvcvkb2K7vC68kA-yurxPJGDqR2FKxiaUVanFLOqTbHh+WNrvZI+-lXXEj1+FZcX2A5ZjqRkbYJc5K2gvzpwIaaTCvKM7QSrCNlERNoy8A1Fk9ih7Wdwc7BY6viIhx8cPGnw+KnvQZK5FB2d5Okrfy9aYi4CdI+KrSNfqQj4qxeD0jTWTKUsBaEnUPpqK4pbCuqzdOQRcPiqtEs28TKZlIXNEh92Oko4tnSP7zllyynw2MTW0gZo1cOqOKUksJGKccLh-eYRodUH5vVbWmFa4jBzlKG8iuWZErkVm7YyiEawhFIhcIRrKMo85LGvAvksL-tfBPTJ5hWQbHPsQu23SEdO3LLlUf2YFKQh3w7HB1t8pHWElbkhEy0cuRdecdoUPzK1+ylPcjo0OG6SCbO00evJCNkGGkyqFww8cQXwGMcNy9xGvqCNI7YtpW+Igev1VAYHjuqDdAIoCOFEC0FezXBEsZRlGOkeCyghUQBIwadcKeL3UjC8NPqfdbxxbBQbfUEre18xwXUxlo2Y6gZg+YogyvYSmiKFsRwXQPHjxlHBdhSjAjovr1AwjssJVpHcRYTLQKiSJnbU-rfS5YnEDh0XNdqSPLHKlmuxbPdjKJq6D452Ak1Kgw1gFjEp6QuVETS1ebn1SOxbKUpCIvLj5yydI5SZHQ8GXVkRQuIHIULPolcFJ+Y9SQaTq5KT6BmFZMhQW0mDc0RsbOSX52LbYsLh6kxkgfzMnN1fmK1XIrF39IZj-sART4ReX1KE9mJQUofEfiGqy8O6W443paIhLd46RSFX5h0IuFIVc6qldiaqP5IK8DJSmBUWlJAZfEZRBU3euBzaZMj6qYRNEaQJs5qFi2qU-TsIU+G1NoROXXIYLhYpgtJxejZTPJJzzYiWpvNfifiJalCUEmy7f2p8XVGnC3mgPSYYM0AqT4jBC0sAubkv7U0ViyTGSRFRN61Si2jfBafqTf6n9DpEUtqaoNpofZiB3EsorxIxqQCVmEQ-4g4MenAkzOLY1FhPnbG3sapIo73CMPFbxUYcc5G4Xi2IJ8M9ea-YXFPgxx6TdpIo+6QdK1ZHj+yL05GWs2TJLF26TkjMRSX3HzTkZ1FMzmjNwEnkMqeXbolvxIGei8ZD05GWZVjIkyEq4OVCn7WhnJU9JbuC+muX+xbCQ2tzIidgJtZwss2rooUWiw0FkiKxKuNcl6QUEI4C6s1Pxi9OTaF0Jp3kv0lBN+lrkc8AMhWVZQ8YnTe2wJQGrh0p7jkYpVpCojrNY4vSOaTog6ZkTryGltKog6QpbPiFac1yduPWZkXGHLSFxmA2qitVNJblupZ9G0t7OJ7zTMiUrAOZqSOnlSXuE+Lict3iG0SpJxWF6QPTjpFiDpOck2VbVE7mFGuEYmwQ8UBwPTHxZ7IpvnPpwmSZStVcCrbTLkaihc3eLgaLj7EMNiZ80n4ouwYbviVaebW3NdLZGIM+SlJF6Up2FJmN5pjpcfE1PM6-9Tiuk2ydI3sII5IcestLs0zmlCzd5euKLmOLgF01YZ68+6hnPfIQj5pWQwAi0xel3y9ca-Ceo81T7hz-s6OGWccXVKPyVKsNA6dMIrzm4gRp8vCFVO2ljsr5d+eWReThZx1lpcCtKmVJ0o3k7Kb3SBZuwpzfyHq8spCqpUJ4PSkpDIxjiI1dZ0kPRkYsjgbmHIvTiFQlaUULIKnh5QKk9KLkq0llWdEOCOS1gdKQr6lDqsIqfFl2DEJ1fSf-MsWnOVJezd674hwfdyfGEtJhCi0gr5We5XtU5rw0jDLN3pV55FYzXXAIsb4qLZ2xrEQSxRGofz6JOij-EYJUVnUzy+i7Qq0Q1lQFD6U0b6ZoOVI9MzS+8rkXdwR4MdsiNwv7nmMNYSSR5JOKCXZMA5mlH+yiwJXNR7FOLmi2XZGh9Oto8yPZRQnRdJ2MWJKHFXA0JcpzX6DkUc4CqwTtLeEqEzeqw97NRnj7N0NGI+BpYGLmoeCnua1M0pUrHabyvS00FpVHyhw8E32rS7uXvRApkFisaYqiYqW1l2DnaDSsPDDh4JBsllFjPbn7SoIVLKF5ct1rQuAINLXCHpCZYMu8KYCCFHnPDn6VmVSyxaPi7PLbMOUTFOaZtM5ccudJMkhRhA2Bgr1iXZ5yi7yzEvUzWVQC96xecHmONtxUybpbubdqLkWZArSqNBfAkivP4tFHh7nAOpIq0Wby787-X3A0sBLq9DqKDIldDWorWU4B8OSlr6Rykyz1ChnZ5egPDyD48R9SnARcokoxceVAdGFePKObkYM6ZyvUqorh6ErKM4pD0oJVqp5DgRniu5TyQZV34VGDSx0rSVzqgqP8uA8fBdRwqRtFuuytuWRitaYM1VplQ9lqpAkk4cmP-EeacQwWdNtZcBQIRKv0FuFiCnIvjI4LcIoqD+w88RjnmyVn0M5VrXTsyuqGlU55NOBpdUJwaIjIZIRAoRfL57wrZx4ZWNbUVZWZ1M10fdDjZT8YBNg1buL2bCWKpuqgFzs05t6tSFuCAcuRUzgURV6acZZz1UZdsM1KE8c1Ha8PNl2NJ6936AdW5Vwux6UimVMajtchX+590GlOwqNca3iaecv6mC2Kb1JqVKEBlbq-BZ8uGkcrIchtDYR1P8ZCFMJXis+j4pOZmrJ1ETGhmcuIWksL28AuytSydU0z3KGaydSeTnJkrJ1ToqriqMLWkZh1Ui4nNzLtz1SJVlwvjjGR-WXDDFKnAgZEuRy4yWy2ojlf5T3r31BlGG5Tlf1bpSFYyKG6HB+v8qHsB+2GgnmKplKmEk6jLYtYoTA2A5VVcIymrnIo0CjmxpCu4qcXVqdNABsS93It0g3xUGSWbdtb6LAIarLa0Q8jKyIrqK4fFSuXdd6oLHZEAc3agsdQ2Ao2V+yceMeVou5kY1OB2GimsOOfHPL4i3lHQv7x5bglIeuMxZrBtVmMk82kGjNiKW5WIauiIOaaaOrLSKFsNTRc2uf0C310QpH4jflTgzHV8TV2GwEjDhcVxaLGobCLf7VXlWDfpeENosxrPyk8WZvcidblrZ5fqVR4ij7DiusEaistlgyDahzz72sLNp4jxj6WLl2Vl1r6qhTp0ZzibDxljUyY1voZ1MaakyqQtaXo2MsVceEbUrBv7l71LmSWznIIPiZt15V9GnvJNqEILkLN6q5pkL0K08c7m23APswO5ynrqZnWvCO1ivVo5SezMkjY6TQ4Ib3peFUXI6oOYXbIc469DdasJ6gqbt0fHOqlu41edOZbzG0u+QmrYaTBReeopBuh12tkxNxaZagPG1acIdrQizfGRJYX4odVmkflcoqlCFolY7NHaV1x3iVqKXqqjJQ0lZCck5lLf0nDOwUqF3yqJEtvxkjUqTsNcamMlzzcWblidWC7RSzoLz+lIN6kpWuJol3ZFR+0m6ehls9HvlP6Uu0yonPF3dU5ij60+eDgq3EdaJlOEjB+oWnSrzNE643XURs2mE7N-K+TW8zR06SZ14rBHr8yhzs6ndismMi1qfUF4KtmWoXHRolUrMOySVbtSs3NxJV2i8TEImYWi3PYnJge7XszPbV4sPVKy8wSFXfoYt7ClORMlepT265Vxju-PQa3SWrVWSUTUHdi0m2yaf1YMpUaioT0x1K8o4rpawNbmId4KgKwPTnyTF57llvZFBQk0mkyUrF62lne+UZnPKJWD3Ockbv72lSa+DvS8SgODUwTx9DqwZTa0Eq-bN9-rHJudOPm00680kjreXLZ1uSp9e+0qSM0v30N+q1ywgT92-GTa2doKm1gyWEJ976GC-N+u4sz3hy19D2VEjFVr3fUyeoesAyipUHvS0tbe6iVOLQLj6CKRe0zfrkqGb7UDSLEQbVXEbHs0+L+3MhgdwFAsiDqzfvknNNLv9QdE28fYyzd3PYY6UxdZhyoYNu1DqRpYseYX44SDJtNJLzoHoLlsHN9BcoCvgL67t148Fo7nLwa1Gb7RVTBvPfIZOXLz+uD2QXQZX11eku9U+kCR12PaB7HSXLA-NJtl6i5eN72s-XYLf2GGmSACgw6+Ljpa7LxH2TReiP12f1z6m++Mlm38J57vDny51nPkFqkZXDmWloW-uC5T4uyge3eZE04NoKPsZ22FWWkA4b02iERkmtvq8P0MYcMpEQY82dZSGL6D-ORVPqAWnlmNpxDXYKLNnLE-++m15uLRZ2JlUZZRhdlmxg2b6jynOO1uRImnuLPDRRybYmW0Nm6AKT4vbSwfGOtSh5a-bjSCIAPVKgDd+eOoHv4X769FU+9Y3bytqX9qyUknpXJTtyTbr27WQZX9zjpLVQVf3DslkcQ2mk820WzgWVwnUXGv+9g55TcfCmH6raTa0I4rvYJ-jXjuogfa5s+MgnHOpe41o8zKbt7seima9o7s97KDhGiyi3viw8bGsli1ZHZSmt8Hg6XVP6z3vcPDXAmme57GvFFMWFwnEGww3+eCazXKDEceXCHr7sV1yNna72CHHWPtHAEuTmpE4strl2vbDjBlcHaMSBPvZ+TyFS4jX19zSnlBTJhOhBLq4K9xTjOPuu9gOp80fh8pk3AZ1XHxNgqYYpIyBsVz66rWxmvU-7jXqCUVGWp34uRgeGO9zZfjcFtuwNyf0S2Dp3tZ0etM96XNg7C6knW4bgsemBuE1ZqfzzOjuV-p+nKVPX7r9LpZx+lSzq4ovGpTXBf7p20zqg4m9N6h-dbSEI27KtHejdeGS5Er9hCFZl5dkLuaYr2FU+LaXxo3mTaESUXa0wPRRPabOzGFM6Umf5osVBjVikjizoRJKKac9S33rnUwZTnxKdveJljL9Kii5liunvGNt7N4CkqQbOc1po8HkTYyNtXXVArbOwlczkqvs5TtnMXmDS+W7ExTLPycKBVneNoq2xHxSmxh6vc89quj4OyUWyIqaKadt32SgD1pYSZOZvNQ5D8pRiC9qsW2qUylqYoQiucVXmm2z5Ra8+6qan-rrTq9Y0UfhWpj9f2T5mnlVqVxcc+TUw6GlEfvGZnyhgletTyvhzt10xVipXJNuLZnHrTF5csubk5NUWDSHXZMf2vrYBbn9LOxZt6Z7XCFMT75ntVy2gsrUrd+XZs9jSqVrq1Dl9a83BvaX8WdLvApS1crl4lniO27Xes9nPP0jxhUZ-yodRM4y9RBRO8bfYV3oVkbLCPOFnGLkv+U+OeY3-eYTsZsWtOu9a0m+woyqbC6XzSixFawrcNmLFMiEqvrim719pepmK9ue8t77HOjA2oZGwWPwGXKZloA2Fa3qoHmZKDcK6gaPbxMqyANYDbbrgIq4YqxZ7yxTV+bfrWrkreUXlzUFH0ULyRwyioWav4yILlminR1bSttWv+HPQ-dWQ-z9WzTYOpq2Nykuu1MKhg7y6bUjpD7+aBDbKYsekNDXHC63aKxHVxH2mt62dJdsGeiEiskrVGZa6iRrOu0YRvtNK6e1mqMCYDc1+zUFeWs5ELruWtes-RKtA2eCIPADaaSDWV7xqMVMXBVa3rxatugszM0Vsw2MMS+BDYzVIZ6YxUr6elqgXvO0uE2ojEktheBTGIZiYq3uVa4eKvJ+LJViNkmgyXJk6Urxx5o47DbdyrXxSYBRft5fkPB6tlCAhVTdNQKw23iAt+Ef4T0uiqsKPY+K1CrOFraL6NJB4lLZYWLyNbOZjG50soPnyV1rxCak1bXJX0pbfvXkebbnIjKH9vLKLTSaOZFU0NjN-7fqVTbm3dcI48wfhxv4HXgrCOLOdFZsNnUCtqNmw4yTh6K3xFaOEi9BOSvPYIa0VvC3vOevJ2ry0Bzg-cXRLgsKidpZ2x-hp3zmf9aV+Mp0KO2JnA1JZ36XaUTujXgG1V7y8Az4agVLq-tU7b5sQZ2lo1qNhzjjpLuOti8rN6ZaLlUseshdZl0XJnx7tZqYyll4LgmcvymdYuPYqQ7ncpGA3FGnbCJtpc3v9nB2LorgwteAsT3EZaV7oWZXFXRWgFLM02bKVTGG77rqtmfs9emMGksBqN6Y0rQurtFDho9ga7RN4oTmP7tvZrd5eIVr19VD56kz9M9E5Fu8UZlZrSWrNyXNm4HVmSmKyrlaO7jtxTO-cZuoOnTmxiC6g8p3fsnh95bB53hyLTQazNzBhnUvweJLOcZ5FMXUf+xH3Sz2PAIvEWvPT75RsOyi9PsOpXGoGcukUeNptIBEYZKD+meppkcYDhOqgw804QV2daAiNJfi+-tq4I2tHQk0wj+zsrmGx7fPWGzQWjnEOO2sNAcYI8sfZc8ieRZR+6LxMwlcbXpIh5mYYOelWitDhceDI4PCi3To+ly9Dkn3EOrrmAi66wZjIokcKg58wo8YOuw3j8oTjx00VDYEWUHaTv4sXz16HmC89Vxo4B0Zx8sUHxK5G7Q8BIMdP97U2XqRlFuLWMaTVkoSVa7mAVx8FT+EbSMFwylvNKZDFmZcwI3ziHA9b2nLVKcxM-LFPPJ151TNqGxcQzjx9XNmpzjBH1c0iRdRG2242Taj7Ul9vwezbdtHTnox2RWoT1Yu74sM0084G8OqOW3SY-g8dLP1t76PD+n-cWvXsmn5RKS+F3nMdlInpdgi1iSPXmyeiDtqh0pm7v4O0GvBKe1C9Sqdk+jmVQ+h9nUO+Dc7SmUYx4-jKtE+OLT7F3wRC5MNkRl9VHU1fUIb0UHPFqxx8eIdUu1mIFEsTbXqe261CZL57LQ7pe+XKXVmgHJe3Qnq4MWqt69swfwc1cgKpJjxzV1KnCWfS11ZKi2qGtL0WnAFbfZ1z1PCKIHsdYuvfdjLUGzLcBZDhBb+5ibpiep418gsRHPbI2FC6qbA7gKbrKLbxqNQjbeNG0aa7r2vAk5gdqPw+mDKBFH0nydsUG-rxpf4Tf6mdM74OEy4lyatFZSh72ENyyyJ4qNE3VmhjkXMFokZ-jPruvH3VTekthGmdfN+bU5Y-9JpgT71+XJoJT5wy+b8PYw19x1u95q5C6vh1+sFWyiud73FtppxNu+GNLhN1H0Nm84erdRs3qKaNsPWhr-052vm4DaAER8+blEquIjYfjUchGsF7G+ueLv9T8GlJ8YKzNokQtNKkuh4vutFPYSgd3t03x8YiuhCN7xzuuPsc-WgLnDzu+5TzeCFPbpr4AiG8bFgdS9UQmIS+rUu9Kmr2LDMwe4MIolD2tbr9yhSfeNy5SDR4jrjZ7wrPr3sxWkp0J3ezFc6oQnq4WuOtra0PGBP19wNm68nMPIzlCnFbLrxXzwuJw2wgZcuCbP36AinfqRLYhvBD5bbpyXSoyx3q77uCDb++4FokXduHkQ5hR9I4UzRzL2SZI+tLKyxPHH9XkNqk9jDlReDQdey9UdVui2s7i8ywqWpFvjPKJRPiYf665uJ30soa0rlotQelOLCozz+ZOK-MLqq5fY86yNWIdoclON9iG5Al29g3N5pQb9Tvu8szb4ltQxjRguDv3VMTtKrh+h3h5IvaE+4ivbYu42jNoX91VDhRLcefV9akdxg+410q2LRTu3WZ-KFcsxeuH3e06YvGbPNtKtpq28y4oNfMSi7FG1B8UYrKo6agtmzp0fsq5j8kOxtwJfV7P0U3U3mHf6vsc+To3w3C+sfmOJwf91rK0Z7h52E2qyWnS6GZYOoMVFj8cNnb4wbf7kf914lPXFfzIfdEObBlVb1Ri4uqf1jL9G-Zh-e9drgXzh8biqzG9CFev97nEebVm86XCJ+R-j1ndRfxCbSn9IQoF5Y14E1Kk3nkWgd8bsS48HD4joBxKHuOD3vosmXzR3dE-+zfLjfoUc3cqFmn5H30bkwa3Xv6f9W2oau+xXjbaJXp4H-699GFfTdg73nz5XSVudaaZ+HH2OxO-SEjPBYjKd-zR-IyB5NNNn+3YzGf0pypP2sT5Twcg--3JkyyamT030bRzR3enp+7GsrkQSaP9zdl3wFD79j-+ytxqMwKoFSfW1oS0j9dqqV1e1Gtd-ES1mejnf7Kwn+E-Buu-cBOrADXtdh-KlVvfJOD67WCVLixPCfr-hXeh9C43txjq2WN7VJFfXa6bnC8n6aIMlWil-XIknUCGzOqM7L0L2DYZEY6mflTjSXMP8Y2fQdRWHP4zjM91-ln3fpv6TXaLJ85S0f-SZ3+Ppo+m-vBfdyD-7-xjRHlPcR+6c7+ifG-QpRCaT+RLoM77ytQDQK7+s0-yMErwn6eM7Z0-DxsTPrj6V6fi-hu27DOj24F9031eZ-jSjDiNK7WP6Btls0cc5-kZYtE-18VpI+-SYlXEohfXg-wUPaRl-90cbv3FJ1PN62T84AqXgAVUFZRz-YO3LmRz8e8ePylVQJC-SZ9cAwphYdVqAoi-FqfI7lOJIeNH0edbDSDxB8aA0qU0kbreqkz8R1RBkwJrSM3xoChJLgN94wCXZlspRcdrVA8hdLTkwIMLUnyU4oDHAMdZJ8MWRAx9jNSkr14fcig98bDZ+XB93SAfVhwo7BbjedbdJoyO4ldTQPaNDtB-0J9BSC4gBwkPCqTj1bPFyk58Z+aX1XpWifwnB8XAsDie5J6PJ3qkMWPH1RIOzZP1Xpv3KnR59ggrXzIcGPZOlH1-AisiDYwgw2kPZ3AmJjdtStJOk69VfY4n60mfYBijU6fcBncZKTXTRFNK9MQM9M6fcJiSVu-SoKEoWHbwIKIYCTIJbIPfCXTR40fFyWEZcifRwI0FPOyXsICKdrHiCt6T+0DZSfT+wBx2iXY3MJFuKvzFwETHd1ekRCUOwPdXpAIkJcmRLFRTlKHMb12ojPVYP8I4PV6X7cBAsulvw15Zjxcp4fGgkCDr3YvSmJFJMT2L0nTcnkTNI2M2189seeZyvdB3O4LqZP3YvSdIW7GUlNJj6GGx2CHqWb2L1hmULxT04WYJVttKDIx2SMEhGny0MhgsGRpER3SbwxCzcF2WpVxFZ7BP0RAgyhO9ocN5gWD4qdJ30NHgykOZxUVJgVL5YTDALLRVvAIX+CgZLnBJUKQ96n1JMqS-gIYxtDFnh9P6Wux+Cw8RP3AsxQn8hzNypUQSFwb-MUzG9CaPYO1NEyXqmxCe9HoyskpleY1cNABMQIyZDgnvWFJy1R4P70DTGp2jsdGA61ZC1cIr35kWZWF3vd+ZHo0ykh2GKnG0embUk4F7QzXzWCxdR4P-cPvIU0IEHfM9VQIDQh6kODMDL22xCprSLkmCxHUF0d9EOJjQJ9nQ6diuNkvOMIXYj3A-SFNMvKuwD9wRQ4I5o0SUsJ-JDZcqUbMfuSvVW8r6atWdCT-NlluC6bbEj2NxZZLhPpIoYsJNUkfOjiopx8MzwHDqOXBk6U7ydANXNOtFYXpNbg8IJRVWjOcL7Ne1KZWDkIeZbye8xvGm3+Dd5O1myCfgwRncItJcxTDEFQ-Ey3DmrBYLvk1Qil2xDI1Bi1S0CjDcOz8afM83tCdhBF0hCPw8jVQUx3OrlB0NLKjBbJ+DMT095CyAR2vcwI2w39VEzJOkx5yAoCM4EUGSaDpwh6VcRUYUI+PgM4+LbVzdkww1Cw68xvd3EvsacTCJZZhSG4PewyIqzUHtR3dIKE8A-BNhHxqIwEOH5mIqPk7YhGUdwIZrQlMM+ClcNmmAJMI-VjSU32YSILp+3SFTHczjD4PYC8JZ2kwiKaQ9giYS2RSPJMFicCWXsiwzrSUx1bX3EwinZcenYjzlEZQxUmBMrTh4MxJTH+w+6AyPa5oLMSKgFi8RU0I9vNDTgQilMaQWMji-EBjoC7I1JSSpIpYoJtcLgiORVxPImrSEioBLe2sdSI6KOP4UA3CgGNIAo4wqIlMMXEwZMIpvwIoz2YyM39srEsShUKccbTSjbFDCO4E5tQl30iKotB1YUOwtrXsCyibdjykNzKKI49sSVcQUjxPHXih8spEfwqZwo8nFsjjPBi3rNqo7VUWlryJM2RdfbZkLYJBo3CWMidtG1UlCphG83Sk8Q9cV00tgqyPycg2TCLTsImcMgOjTqX5mZJWxJs0ajMAlQjvwkhYyOTtKVcqMS9DtNfnDYArAp3Us0o0DGB9MI-r2msuo2tUNNwlEQQIZGgjyI8VMogSzf4YcYaNrVzaQ9gnpkyTzggVv-AymajlefaMnVX2TkOMjt1J1lqtbAsGLmibSdQnO5cYhRweFxopCh646uE+V01QyNbXGpGVRsMwjqYr-lvC2owaTRJ-HZgTXJtncuWqZPvKiLhEHuCyXYioNf-CBcUWfrh80rI0XHH8oo-yiADswxWIR5ywtRXo9k5cQQdtZATvHUJLTcWMSUhLYaPR9SWAdgfNrKKQyZjKA46K3pteQfHfFo8aSl6DPWcHHCip8K00ViIcLlmEdxY72KsdkWHf241OvJnUOsHsa9hJdqorqk5pqnKOJBN3BRdTXdIcf3x0istLqN9EgJIPD9j8WFdzSCIeBiNTisHOOMvMSWTOhQiM4wF3EkW-Ndm0iBY3B3KiCxLj3Moo4-vBRJLbWo3BJWLZkMacboxTGSVFY1uI0ky4rekHi1g0CjX5x+V93UstOa9nPpIYyzUMIx45CNKtlwgNmBc1qEb075wouIPnj3NZ2QJVFY9zQbpxuDYJTIURfTw1FOBC2SjjjZeh13j65XOkiCj9SHnb9mogIg5i4o-P2+MG4nyJt9B-dqWfUrou3XCiAiECM-isnQh2XjXaCz3Qc77S6XfkO3GChASCKTGLr9BBRyLr87WceKNJ26f-isjocPyKZseBT23Fi6tN+z5D+XfqLLQemdgkUxUEjwPAIWYmnQM51eVcKMtF-EczSjtSE60-jd5COxNjDwwS1yIlicRgq9u4pmIhdVIrenKMhw8WLClWVa4lflxxEf3hkGw9MPLiwpH2gw9hY4xjPE5ydon8djLcbUA4Gwkax0SwpSlVQSkFIelyIrJdmVYCQNO-huj1CM2yjjP7ByPFjP7QSho0BPd-jVNwo9QgD1FY6Y07JFwnROmNm7GmkIt2+BT1+kr6SnGHj-sYFWxITY7JiApAjd6TlCCuWSKOZ4kkiPCTvKYggHc1opJJMln-AtUjZYcY7wCTuHTxJ7IpWVJNJ4GBYpieEgNbYOcSCKdOKQoS-ZuOCT6GLNiItBAjmWcdlSEmLgJ5SaqJWY5aKqKiipk5APJ5cKetiZCpwgWPRxMXNaLD1lOYpO5x3dNngS0-aU0kgYckvWIAZHIm5g64j-HZJuYnWN6NPlQmIYxuiisVxNmTuTBkW0SNk15NiYXgnCnbovXM9R2Jwoi7i6iU9fC218UIkFNZYT4xjkwdeI8MOZ1w4-6UhiwZLNjf5ho5FIJdzxWT3icU4gWKtYzEj5PhcPEyZMdE3pH3yGT9A2STSiuKFXkmT0ZPsmXibWX5hRIKEoI3woHEgwIvo4CD7GHit9GtnjcNkvfWboDuaIQaEFeGhOxYqA2ZKqtvaM5KmspiS1x99qCL-2JCrScVLXJyo-WQiYoLdiM1TPlBb0vwk6LLwKtdYuFXCi7cRxSlSMBWWh1TVZZ2T1tWxUDAU8jAMdiZjgIjVKUjK4hlI9SGZYELl00cWJM9FrRALUmTq2K8nMdhY-WTtNgFasKHIA0nSJ7wVPOKM8cLmY8UmS-ZIAO+UizbOxtCzU7vCRSFxJrw1SFxO1ilJUFZOS7j-kpaxuj3cakKTTT2QPHMCrkpomHd1xcQ3b4Uokx3CjOLJFOrkPVNFKWcmJfjzuTlkxVXFsu0s70mTq5SmgZS1nI0RMM8nBBMrSUQ8OPKIgkpNP7lm+WuUnSF2JCQi99fNdg7Tzwm6NXSGUpAJtVBIpNKQDmZY1llVpg58PiETEtQidDwU0VT1xqxS9ML5n6OJxPcBuM8KzJaJGAIWcNk3AKVokUkDK6dENFiwLjy5UYlFwpEn50uYH5WZKx0DWSLzyM5SV91+lRiCsmBT8XI+VwytPXBnX48nVjia4VcUYidodU+e2EYkUkiXrFjtIdknCCI9ixUJRiR9kmTD5OFhexq8aSioSWM2zhe8eU8IWRsCMgeWEYaaWJ2Gp2UuO0AjRiJQgZS-ohcMxiqjZCkgTuIzWXaSBMtgh5TNuJGmUzNuSxnSU1xQNT-SeJcjJxZHIm3jcJA8RNOFirM7IhjIGXVpKDUs9czOQZ2IqzIZIsNaqKsyjDXBjgTaNWOzslt2XWUITfMrbjBM4oqzLhZjRIdOcNr2NbUA5dZMOh8yOWerWn8UIz3nQ5jxF0zqpt8TTM21z6KRKgjxKB4KizbRe+XGk2fCfFrjgmAbBFRhsKgDzR1QKcBSAJsWVBmwMgaMBnh4wXAGGAYAX+F2wrwXAGBBSAEbJIBcAM1EdALIBbD2BGwZYE0gYARbGgB7AfUDaA1ECADUFr4KAG1RZARuCgAJIRgFwAOwFRAGBMIDAA3o-GKIBzwMASWyzksCMHH4xXyNGg7B2QBIGYAM8E7LIB6IXAHOyN6K3GuyRQDADdxDcL4n4JHsxGxEBVaIwGoBlIagASBzUPHC+ydMM7IuyvSIHEBzgcmIgVxe8RIghyz8KHLGJXsttFkAsAeIE+zTs37LRzOvTHJ4wBcX0gw98c57ORwY4RgFqQ9gWQGRyPs47Mpy-szpNwBacouPSJXSJnMJygcDsFoB7AGbNkBMoRRDpAggPUDxxZcixHeAZsqnOGEXsTHMAsXsdElWNSMUXM2yXuBgDoBuoFoCVy5cjhDVy-s2DIFybs3HnpzsITPgNyA+AwGCB7AagGqA1UCXIoAQgdoFwBlcukCtyLs-G1tygc2HkRxdckXJU1mcjHDJyFwZmG8BQEAPMtzEgdXJzwMcLXPPoMcX0lR99c6PKhyUyRuFoBVEWoFwBFUHQBMAiAGEFAQ+coNVpyEcIHHRIz8B7PzzNs-shhyWsXVH7BK86vLLzu8qvL9y+cwFXryGeJvM68eMZ3PRJy84WGUhfc0BGnye8wfIuz5nUPNuyEVBXD5wV9CfNbymKNaGShLIfmBOQ+8ivIHya84POWJ686yibyUsvPOp0CctvJex9szkHmBcALAAYApgPHD+y2iTXLty1CPMg3zqcSfOwgmIFgHfB5ELoCwBzUAYDfz6AD-PVzFMPnC1z48RfCwFJ8oHCYgDYQkGTg4AFUGgL385gHVzdFVfKzdN8zfKjy7857PX4BsnoESAiUGArgKv8j0KQKomX0jhpJ84fGbgnAPTC5yO8TgvMhUctIwzy7cz5gVwziCiknyMcbbN2yu8nQAMAuoOoFwA+C+XD5ypSLXNhJs87CHfTnc4rGJyqwZtDWg-MQ9CUKicPnIvy7c6lIAK5TW-Keyocy8SvBZASKF-gfs4woELs8RAvMKLadEmyDtCvnEbgDgEnLwQnwOAFwAMCqYBaw8EA4H6B1cj2NXzKJTfOwgKKJZS+xbCxHCMB-0NtB+zQixgHCLIigQrrwBcNQuM10SP8iSK3YzbNjIsinIrgAoiyopGAIi6oryLIGTPJgJWCuSzKLBUekCAA" target="_blank" rel="noopener">Abrir en una pestaña</a>
+  <span class="c11l2-estado" id="c11l2-estado" aria-live="polite">Sin cargar: la primera vez descarga R para el navegador (unas decenas de MB).</span>
+</div>
+<div class="c11l2-marco" id="c11l2-marco"></div>
+<p class="hint">Shinylive es un servicio gratuito de Posit que corre la aplicación en tu navegador con webR; no hay servidor. La app lee la muestra de 496 viajes (<code>viajes.csv</code>) y <code>estaciones.csv</code>, que viajan junto con el código.</p>
+<div class="readout texto" id="c11l2-out" aria-live="polite"><span>Al arrancar, la versión sin <code>reactive()</code> ya leyó el archivo 3 veces (una por salida) y la otra, 1. Cambia el barrio: la primera suma 3 lecturas más y la segunda ninguna, porque el archivo no depende del barrio. Mueve las barras: la primera suma 1 (solo el histograma) y la segunda, otra vez ninguna.</span></div></div><div class="practica"><div class="practica-title"><span class="tag">En la terminal</span><h3>Cuenta los recálculos con <code>message()</code></h3></div><p>Vas a medir con tus propios ojos cuántas veces se filtra la tabla en la aplicación del capítulo 10, y a ver cómo <code>reactive()</code> lo reduce a una. Necesitas <code>~/bicis/app-viajes</code> de la práctica del capítulo 10.</p><ol class="steps"><li><span>Abre <code>~/bicis/app-viajes/app.R</code> y agrega una línea al principio de la función <code>elegidos()</code>, para que deje un rastro en la consola cada vez que corre:</span></li></ol><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln">  elegidos &lt;- function() {</span>
+<span class="ln">    message("filtrando viajes: ", format(Sys.time(), "%H:%M:%OS2"))</span>
+<span class="ln">    dia &lt;- as.Date(viajes$inicio)</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><ol class="steps" start="2" style="counter-reset:st 1"><li><span>Corre la aplicación (<code>shiny::runApp("~/bicis/app-viajes")</code>), espera a que cargue y mueve una vez el deslizador de la hora. Cuenta los mensajes nuevos en la consola.</span></li><li><span>Detén la aplicación. Cambia <code>elegidos &lt;- function() {</code> por <code>elegidos &lt;- reactive({</code> y la llave que cierra esa función, <code>}</code>, por <code>})</code>. Nada más: las salidas ya la llaman como <code>elegidos()</code>.</span></li><li><span>Córrela otra vez y repite el mismo movimiento del deslizador.</span></li><li><span>Ahora cambia solo el barrio a «Las Lomas», y después vuelve a «Todos».</span></li></ol><p><b>Qué observar:</b> con la función común, cada movimiento deja <b>tres</b> mensajes con la misma hora: una por cada salida (la caja de viajes, la mediana y el gráfico). Con <code>reactive()</code>, deja <b>uno</b>, y las tres salidas se actualizan igual. Los milisegundos del mensaje muestran cuánto tarda un filtrado de 70.796 filas en tu equipo; multiplícalo por las salidas que tendrá el tablero del capítulo 14 y verás por qué importa.</p></div></section>
+<section><h2>Invalidación y recálculo perezoso</h2><div class="prose"><p>¿Cómo sabe una expresión reactiva que su valor está vencido? Shiny no compara valores viejos y nuevos. Usa un mecanismo más simple, la <b>invalidación</b> (<i>invalidation</i>): cuando una fuente cambia, avisa a todos los que la leyeron en su última ejecución «lo que sabes ya no vale», y cada uno de ellos pasa el aviso a quienes lo leyeron a él. El aviso corre hacia adelante por las flechas del grafo, como una ola, hasta llegar a los puntos finales.</p><p>Lo importante es lo que <b>no</b> viaja con el aviso: ningún valor se calcula en esa fase. Los nodos solo quedan marcados como invalidados. Recién cuando la ola termina, Shiny entra en la segunda fase, el <b>vaciado</b> (<i>flush</i>): ejecuta los puntos finales invalidados, uno por uno. Cada salida, al correr su código, pide los valores que necesita; si un conductor está invalidado, se recalcula en ese momento y guarda el resultado; si está vigente, entrega lo que tenía. Los valores se <b>tiran</b> desde el final (<i>pull</i>), mientras que los avisos se <b>empujaron</b> desde el principio (<i>push</i>).</p></div><figure class="fig fig-flujo" id="11-diagrama-3"><div class="lienzo"><svg viewBox="0 0 900 400" style="min-width:720px;font-variant-ligatures:none" role="img" aria-label="El ciclo de invalidación en cinco cuadros: reposo con todo vigente; cambia una entrada; el aviso de invalidación corre hacia adelante hasta el conductor y la salida; la salida invalidada se ejecuta; al ejecutarse pide el valor al conductor, que se recalcula y lo guarda; y se vuelve al reposo">
+<defs><marker id="c11d3-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="fl-muted"/></marker><marker id="c11d3-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="k-warm"/></marker></defs>
+<rect x="20" y="20" width="160" height="300" rx="10" class="caja"/>
+<text x="32" y="42" class="t t-xs t-b">1 · REPOSO</text>
+<rect x="34" y="62" width="132" height="40" rx="6" class="c-tra"/>
+<text x="100" y="87" class="t t-s t-mono" text-anchor="middle">input$hora</text>
+<text x="166" y="116" class="t t-xs t-m" text-anchor="end">VIGENTE</text>
+<line x1="60" y1="102" x2="60" y2="138" class="ln " marker-end="url(#c11d3-m)"/>
+<rect x="34" y="142" width="132" height="40" rx="20" class="c-red"/>
+<text x="100" y="167" class="t t-s t-mono" text-anchor="middle">filtrados()</text>
+<text x="166" y="196" class="t t-xs t-m" text-anchor="end">VIGENTE</text>
+<line x1="60" y1="182" x2="60" y2="218" class="ln " marker-end="url(#c11d3-m)"/>
+<rect x="34" y="222" width="132" height="40" rx="6" class="c-apl"/>
+<text x="100" y="247" class="t t-s t-mono" text-anchor="middle">output$grafico</text>
+<text x="166" y="276" class="t t-xs t-m" text-anchor="end">VIGENTE</text>
+<text x="32" y="296" class="t t-s">todo vigente;</text><text x="32" y="312" class="t t-s">Shiny espera</text>
+<line x1="182" y1="170" x2="194" y2="170" class="ln" marker-end="url(#c11d3-m)"/>
+<rect x="196" y="20" width="160" height="300" rx="10" class="caja"/>
+<text x="208" y="42" class="t t-xs t-b">2 · CAMBIA</text>
+<rect x="210" y="62" width="132" height="40" rx="6" class="c-tra" style="stroke:var(--warm);stroke-width:3"/>
+<text x="276" y="87" class="t t-s t-mono" text-anchor="middle">input$hora</text>
+<text x="342" y="116" class="t t-xs k-warm" text-anchor="end">VALOR NUEVO</text>
+<line x1="236" y1="102" x2="236" y2="138" class="ln " marker-end="url(#c11d3-m)"/>
+<rect x="210" y="142" width="132" height="40" rx="20" class="c-red"/>
+<text x="276" y="167" class="t t-s t-mono" text-anchor="middle">filtrados()</text>
+<text x="342" y="196" class="t t-xs t-m" text-anchor="end">VIGENTE</text>
+<line x1="236" y1="182" x2="236" y2="218" class="ln " marker-end="url(#c11d3-m)"/>
+<rect x="210" y="222" width="132" height="40" rx="6" class="c-apl"/>
+<text x="276" y="247" class="t t-s t-mono" text-anchor="middle">output$grafico</text>
+<text x="342" y="276" class="t t-xs t-m" text-anchor="end">VIGENTE</text>
+<text x="208" y="296" class="t t-s">llega input$hora</text><text x="208" y="312" class="t t-s">nuevo del navegador</text>
+<line x1="358" y1="170" x2="370" y2="170" class="ln" marker-end="url(#c11d3-m)"/>
+<rect x="372" y="20" width="160" height="300" rx="10" class="caja"/>
+<text x="384" y="42" class="t t-xs t-b">3 · INVALIDA</text>
+<rect x="386" y="62" width="132" height="40" rx="6" class="c-tra" style="stroke:var(--warm);stroke-width:3"/>
+<text x="452" y="87" class="t t-s t-mono" text-anchor="middle">input$hora</text>
+<text x="518" y="116" class="t t-xs k-warm" text-anchor="end">VALOR NUEVO</text>
+<line x1="412" y1="102" x2="412" y2="138" class="ln s-warm" marker-end="url(#c11d3-w)"/>
+<rect x="386" y="142" width="132" height="40" rx="20" class="caja" style="stroke-dasharray:4 3"/>
+<text x="452" y="167" class="t t-s t-mono t-m" text-anchor="middle">filtrados()</text>
+<text x="518" y="196" class="t t-xs t-m" text-anchor="end">INVALIDADO</text>
+<line x1="412" y1="182" x2="412" y2="218" class="ln s-warm" marker-end="url(#c11d3-w)"/>
+<rect x="386" y="222" width="132" height="40" rx="6" class="caja" style="stroke-dasharray:4 3"/>
+<text x="452" y="247" class="t t-s t-mono t-m" text-anchor="middle">output$grafico</text>
+<text x="518" y="276" class="t t-xs t-m" text-anchor="end">INVALIDADO</text>
+<text x="384" y="296" class="t t-s">el aviso corre hacia</text><text x="384" y="312" class="t t-s">adelante (empuja)</text>
+<line x1="534" y1="170" x2="546" y2="170" class="ln" marker-end="url(#c11d3-m)"/>
+<rect x="548" y="20" width="160" height="300" rx="10" class="caja"/>
+<text x="560" y="42" class="t t-xs t-b">4 · RECALCULA</text>
+<rect x="562" y="62" width="132" height="40" rx="6" class="c-tra"/>
+<text x="628" y="87" class="t t-s t-mono" text-anchor="middle">input$hora</text>
+<text x="694" y="116" class="t t-xs t-m" text-anchor="end">VIGENTE</text>
+<line x1="588" y1="102" x2="588" y2="138" class="ln " marker-end="url(#c11d3-m)"/>
+<rect x="562" y="142" width="132" height="40" rx="20" class="caja" style="stroke-dasharray:4 3"/>
+<text x="628" y="167" class="t t-s t-mono t-m" text-anchor="middle">filtrados()</text>
+<text x="694" y="196" class="t t-xs t-m" text-anchor="end">INVALIDADO</text>
+<line x1="588" y1="182" x2="588" y2="218" class="ln " marker-end="url(#c11d3-m)"/>
+<rect x="562" y="222" width="132" height="40" rx="6" class="c-apl" style="stroke:var(--warm);stroke-width:3"/>
+<text x="628" y="247" class="t t-s t-mono" text-anchor="middle">output$grafico</text>
+<text x="694" y="276" class="t t-xs k-warm" text-anchor="end">SE EJECUTA</text>
+<text x="560" y="296" class="t t-s">el punto final</text><text x="560" y="312" class="t t-s">invalidado se ejecuta</text>
+<line x1="710" y1="170" x2="722" y2="170" class="ln" marker-end="url(#c11d3-m)"/>
+<rect x="724" y="20" width="160" height="300" rx="10" class="caja"/>
+<text x="736" y="42" class="t t-xs t-b">5 · PIDE</text>
+<rect x="738" y="62" width="132" height="40" rx="6" class="c-tra"/>
+<text x="804" y="87" class="t t-s t-mono" text-anchor="middle">input$hora</text>
+<text x="870" y="116" class="t t-xs t-m" text-anchor="end">VIGENTE</text>
+<line x1="764" y1="102" x2="764" y2="138" class="ln " marker-end="url(#c11d3-m)"/>
+<rect x="738" y="142" width="132" height="40" rx="20" class="c-red" style="stroke:var(--warm);stroke-width:3"/>
+<text x="804" y="167" class="t t-s t-mono" text-anchor="middle">filtrados()</text>
+<text x="870" y="196" class="t t-xs k-warm" text-anchor="end">SE EJECUTA</text>
+<line x1="764" y1="182" x2="764" y2="218" class="ln s-warm" marker-end="url(#c11d3-w)"/>
+<rect x="738" y="222" width="132" height="40" rx="6" class="c-apl" style="stroke:var(--warm);stroke-width:3"/>
+<text x="804" y="247" class="t t-s t-mono" text-anchor="middle">output$grafico</text>
+<text x="870" y="276" class="t t-xs k-warm" text-anchor="end">SE EJECUTA</text>
+<text x="736" y="296" class="t t-s">y tira del conductor:</text><text x="736" y="312" class="t t-s">recalcula y guarda</text>
+<path d="M840 322 C840 346 100 346 100 326" class="ln ln-d" marker-end="url(#c11d3-m)"/>
+<text x="450" y="366" class="t t-s t-m" text-anchor="middle">y vuelve al reposo: un ciclo completo por cada cambio (o grupo de cambios que llegan juntos)</text>
+<text x="450" y="390" class="t t-s" text-anchor="middle">La invalidación <tspan class="t-b">empuja avisos</tspan>, no valores; los valores se calculan después, <tspan class="t-b">cuando alguien los pide</tspan>.</text>
+</svg></div><figcaption><b>El ciclo de invalidación en cinco cuadros.</b> Una cadena de tres nodos (la hora, un conductor que filtra y el gráfico) en cinco momentos: en reposo todo está vigente; llega un valor nuevo de la hora; el aviso corre hacia adelante y deja invalidados (punteados) al conductor y al gráfico; el gráfico, que es punto final, se ejecuta; al ejecutarse pide el conductor, que se recalcula y guarda su valor. Al final todo vuelve al reposo, listo para el próximo cambio.</figcaption></figure><div class="prose"><p>Esta forma de trabajar tiene tres consecuencias prácticas:</p><ul><li><b>Cada cálculo corre a lo sumo una vez por ciclo.</b> Aunque varias salidas pidan el mismo conductor, se recalcula con la primera y las otras reciben el valor guardado.</li><li><b>Lo que nadie pide, no se calcula.</b> Un conductor que ninguna salida visible necesita puede quedar invalidado para siempre sin gastar un segundo. Por la misma razón, si una salida está en una pestaña oculta, Shiny la deja invalidada y la calcula recién cuando alguien abre la pestaña.</li><li><b>El orden lo decide el grafo, no tu archivo.</b> Puedes definir <code>output$grafico</code> antes o después de <code>filtrados &lt;- reactive(…)</code>: Shiny calcula cada cosa cuando se necesita.</li></ul></div><div class="lab" id="11-lab-1"><div class="lab-title"><span class="tag">Laboratorio</span><h3>El grafo reactivo animado: cambia una entrada y mira qué nodos se invalidan y recalculan</h3></div><p class="hint">El grafo de la aplicación de viajes con sus cuatro entradas, dos conductores y tres salidas. Cambia el mes, la estación, la hora o las barras y mira la fase de invalidación (los nodos quedan punteados) y la de recálculo (los nodos que se ejecutan se encienden). Los contadores dicen cuántas veces se leyó el archivo, se filtró y se dibujó el gráfico, y cuántos cálculos se evitaron gracias al valor guardado. Activa «Paso a paso» para seguir cada aviso, oculta la tabla para ver el recálculo perezoso y marca <code>isolate()</code> para cortar una flecha.</p><style>
+[id="11-lab-1"] pre,[id="11-lab-1"] textarea,[id="11-lab-1"] code,[id="11-lab-1"] input,[id="11-lab-1"] svg{font-variant-ligatures:none}
+[id="11-lab-1"] .c11l1-rot{font:700 .7rem var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+[id="11-lab-1"] .c11l1-ent{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px 16px}
+[id="11-lab-1"] .c11l1-ent label{display:grid;gap:4px;font:600 .82rem var(--f-display);color:var(--muted)}
+[id="11-lab-1"] .c11l1-ent code{color:var(--c-tra);font-size:.8rem}
+[id="11-lab-1"] .c11l1-ent select,[id="11-lab-1"] .c11l1-ent input[type=range]{width:100%}
+[id="11-lab-1"] .c11l1-op{display:flex;flex-wrap:wrap;gap:8px 18px;font:500 .86rem var(--f-display);align-items:center}
+[id="11-lab-1"] .c11l1-op label{display:flex;gap:6px;align-items:center}
+[id="11-lab-1"] svg{display:block;width:100%;max-width:560px;height:auto;margin:0 auto;font-family:var(--f-mono)}
+[id="11-lab-1"] .nodo rect{stroke-width:1.6;transition:fill .25s,stroke .25s,opacity .25s}
+[id="11-lab-1"] .nodo text{font-size:12px;fill:var(--ink)}
+[id="11-lab-1"] .nodo .cont{font:700 10px var(--f-display);fill:var(--muted)}
+[id="11-lab-1"] .f rect{fill:var(--c-tra-s);stroke:var(--c-tra)}
+[id="11-lab-1"] .c rect{fill:var(--c-red-s);stroke:var(--c-red)}
+[id="11-lab-1"] .p rect{fill:var(--c-apl-s);stroke:var(--c-apl)}
+[id="11-lab-1"] .nodo.inv rect{fill:var(--card);stroke:var(--muted);stroke-dasharray:4 3}
+[id="11-lab-1"] .nodo.inv text{fill:var(--muted)}
+[id="11-lab-1"] .nodo.run rect{fill:var(--mark);stroke:var(--warm);stroke-width:3;stroke-dasharray:none}
+[id="11-lab-1"] .nodo.cambio rect{fill:var(--mark);stroke:var(--warm);stroke-width:3}
+[id="11-lab-1"] .nodo.oculto{opacity:.45}
+[id="11-lab-1"] .arista{fill:none;stroke:var(--line);stroke-width:1.8;transition:stroke .25s}
+[id="11-lab-1"] .arista.viva{stroke:var(--warm);stroke-width:2.6}
+[id="11-lab-1"] .arista.iso{stroke-dasharray:3 4;opacity:.55}
+[id="11-lab-1"] .col{font:700 10px var(--f-display);letter-spacing:.08em;fill:var(--muted)}
+[id="11-lab-1"] ul.c11l1-log{margin:0;padding-left:10px;list-style:none;font:.8rem/1.5 var(--f-mono);max-height:180px;overflow-y:auto;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding-top:6px;padding-bottom:6px}
+[id="11-lab-1"] ul.c11l1-log li.fase{font-family:var(--f-display);font-weight:700;color:var(--muted);margin-top:4px}
+[id="11-lab-1"] .c11l1-met{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+[id="11-lab-1"] .c11l1-met div{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--paper)}
+[id="11-lab-1"] .c11l1-met b{display:block;font:700 1.15rem var(--f-display)}
+[id="11-lab-1"] .c11l1-met small{font:600 .68rem var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+</style>
+<span class="c11l1-rot">Las entradas de la aplicación (cámbialas)</span>
+<div class="c11l1-ent">
+  <label><span><code>input$mes</code> · mes del archivo</span><select id="c11l1-mes"></select></label>
+  <label><span><code>input$estacion</code> · estación</span><select id="c11l1-est"></select></label>
+  <label><span><code>input$hora</code> · desde la hora <output id="c11l1-hora-o"></output></span><input id="c11l1-hora" type="range" min="0" max="23" value="7"></label>
+  <label><span><code>input$barras</code> · barras del gráfico <output id="c11l1-barras-o"></output></span><input id="c11l1-barras" type="range" min="5" max="40" value="20"></label>
+</div>
+<div class="c11l1-op">
+  <label><input type="checkbox" id="c11l1-iso"> <code>isolate(input$barras)</code> en el gráfico</label>
+  <label><input type="checkbox" id="c11l1-oc"> La tabla está en una pestaña oculta</label>
+  <label><input type="checkbox" id="c11l1-paso"> Paso a paso</label>
+  <span class="btns"><button type="button" id="c11l1-sig" disabled>Siguiente paso</button><button type="button" id="c11l1-rei">Reiniciar</button></span>
+</div>
+<svg id="c11l1-svg" viewBox="0 0 460 300" role="img" aria-label="Grafo reactivo de la aplicación de viajes: cuatro entradas a la izquierda, dos expresiones reactivas al centro y tres salidas a la derecha, con flechas de dependencia"></svg>
+<div class="c11l1-met">
+  <div><small>Lecturas del archivo</small><b id="c11l1-lect">0</b></div>
+  <div><small>Filtrados</small><b id="c11l1-filt">0</b></div>
+  <div><small>Dibujos del gráfico</small><b id="c11l1-graf">0</b></div>
+  <div><small>Cálculos evitados</small><b id="c11l1-evit">0</b></div>
+</div>
+<span class="c11l1-rot">Lo que hizo Shiny</span>
+<ul class="c11l1-log" id="c11l1-log" aria-live="polite"></ul>
+<div class="readout texto" id="c11l1-out" aria-live="polite"></div></div></section>
+<section><h2>Controlar el tiempo: <code>isolate()</code>, <code>bindEvent()</code>, <code>debounce()</code> y <code>throttle()</code></h2><div class="prose"><p>A veces recalcular apenas cambia algo no es lo que quieres. Ernesto arrastra despacio el deslizador de la hora y cada paso redibuja un gráfico de un segundo. O el cálculo es un modelo que tarda diez segundos y debería correr solo cuando él pulse «Calcular». O hay una caja de búsqueda y cada letra que escribe dispara una consulta. Shiny tiene cuatro herramientas para decidir <b>cuándo</b> se recalcula, sin cambiar <b>qué</b> se calcula.</p></div><div class="analogia"><b>Imagínalo así</b><p>Piensa en un ascensor. Sin control, partiría con la primera persona que entra y volvería por cada una que llega. <code>isolate()</code> es mirar quién está en el pasillo sin llamar el ascensor. <code>bindEvent()</code> es que solo parta cuando alguien aprieta el botón del piso. <code>debounce()</code> es esperar a que nadie más entre durante unos segundos antes de cerrar las puertas. Y <code>throttle()</code> es salir cada cierto tiempo fijo, aunque siga llegando gente.</p></div><div class="prose"><ul><li><b><code>isolate(input$barras)</code></b> lee un valor <b>sin crear dependencia</b>. El gráfico usa el número de barras actual cada vez que se dibuja por otra razón, pero mover las barras por sí solo no lo redibuja. Sirve para valores que deben leerse pero no deben disparar nada.</li><li><b><code>bindEvent(reactive(...), input$calcular)</code></b> (o con la tubería, <code>reactive(...) |&gt; bindEvent(input$calcular)</code>) hace que una expresión, una salida o un observador dependa <b>solo</b> del evento que indicas. Todo lo demás que se lea adentro se lee aislado. Es el patrón del botón «Calcular» o «Actualizar»; existe desde Shiny 1.6 (2021) y es la alternativa recomendada al más antiguo <code>eventReactive()</code>.</li><li><b><code>debounce(r, 500)</code></b> retiene la invalidación de <code>r</code>: cada vez que <code>r</code> cambia, reinicia un temporizador de 500 milisegundos, y solo deja pasar el aviso cuando ese tiempo transcurre sin cambios. Si alguien escribe «puente» letra por letra, la búsqueda corre una vez, con la palabra completa.</li><li><b><code>throttle(r, 500)</code></b> deja pasar el primer cambio enseguida y, mientras sigan llegando, como mucho uno cada 500 milisegundos. Conviene cuando quieres ver resultados intermedios mientras algo se mueve, por ejemplo al arrastrar sobre un gráfico, pero sin saturar el servidor.</li></ul><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln">buscar &lt;- reactive(input$buscar) |&gt; debounce(500)</span>
+<span class="ln"></span>
+<span class="ln">modelo &lt;- reactive({</span>
+<span class="ln">  lm(duracion_min ~ hora + usuario, data = elegidos())</span>
+<span class="ln">}) |&gt; bindEvent(input$calcular)</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div></div><div class="lab" id="11-lab-3"><div class="lab-title"><span class="tag">Laboratorio</span><h3><code>debounce()</code> y <code>throttle()</code> en una línea de tiempo</h3></div><p class="hint">Escribe en la caja como si buscaras una estación, o simula una ráfaga de teclas. Cada tecla es un cambio de <code>input$buscar</code>. Las filas de abajo muestran cuándo correría una búsqueda costosa sin control, con <code>debounce()</code> y con <code>throttle()</code>. Mueve la ventana de tiempo y mira cómo cambian las cuentas.</p><style>
+[id="11-lab-3"] pre,[id="11-lab-3"] textarea,[id="11-lab-3"] code,[id="11-lab-3"] input,[id="11-lab-3"] svg{font-variant-ligatures:none}
+[id="11-lab-3"] .c11l3-rot{font:700 .7rem var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+[id="11-lab-3"] input[type=text]{width:100%;box-sizing:border-box;font:.95rem var(--f-mono);padding:8px;border:1px solid var(--line);border-left:5px solid var(--c-tra);border-radius:6px;background:var(--card);color:var(--ink)}
+[id="11-lab-3"] canvas{background:var(--card);border:1px solid var(--line);border-radius:8px}
+[id="11-lab-3"] .c11l3-met{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+[id="11-lab-3"] .c11l3-met div{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--paper)}
+[id="11-lab-3"] .c11l3-met b{display:block;font:700 1.15rem var(--f-display)}
+[id="11-lab-3"] .c11l3-met small{font:600 .68rem var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+</style>
+<label class="c11l3-rot" for="c11l3-txt">Escribe aquí, rápido (es <code>input$buscar</code>)</label>
+<input type="text" id="c11l3-txt" autocomplete="off" spellcheck="false" placeholder="Escribe el nombre de una estación…">
+<div class="btns">
+  <button type="button" id="c11l3-raf">Simular una ráfaga de teclas</button>
+  <button type="button" id="c11l3-lim">Limpiar</button>
+</div>
+<div class="ctls"><label class="ctl">Ventana de tiempo <output id="c11l3-ms-o"></output>
+  <input id="c11l3-ms" type="range" min="200" max="1500" step="50" value="600"></label></div>
+<canvas id="c11l3-c" role="img" aria-label="Línea de tiempo de los últimos segundos: teclas recibidas y recálculos sin control, con debounce y con throttle"></canvas>
+<div class="c11l3-met">
+  <div><small>Teclas</small><b id="c11l3-n0">0</b></div>
+  <div><small>Sin control</small><b id="c11l3-n1">0</b></div>
+  <div><small>debounce()</small><b id="c11l3-n2">0</b></div>
+  <div><small>throttle()</small><b id="c11l3-n3">0</b></div>
+</div>
+<div class="readout texto" id="c11l3-out" aria-live="polite"><span>Escribe en la caja o simula una ráfaga. Cada marca de la primera fila es un cambio de <code>input$buscar</code>; las filas de abajo muestran cuándo se recalcularía una búsqueda costosa.</span></div></div><div class="practica"><div class="practica-title"><span class="tag">En la terminal</span><h3>Mira el grafo de tu aplicación con reactlog</h3></div><p>Vas a ver el grafo reactivo real de tu aplicación, dibujado por el paquete reactlog, y a agregar una búsqueda con <code>debounce()</code>. Necesitas <code>~/bicis/app-viajes</code> con <code>elegidos</code> ya convertido en <code>reactive()</code> (práctica anterior).</p><ol class="steps"><li><span>Instala reactlog (una vez): <code>install.packages("reactlog")</code>.</span></li><li><span>En <code>app.R</code>, agrega una caja de búsqueda al final de la barra lateral (después de <code>dateRangeInput(...)</code>, con una coma) y una tarjeta para la tabla después de la del gráfico:</span></li></ol><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln">    textInput("buscar", "Buscar estación")</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln">  card(card_header("Estaciones"), tableOutput("estaciones"))</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><ol class="steps" start="3" style="counter-reset:st 2"><li><span>En el servidor, después de <code>elegidos</code>, agrega la búsqueda con <code>debounce()</code> y la tabla, que usa las dos cosas:</span></li></ol><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln">  buscar &lt;- reactive(input$buscar) |&gt; debounce(500)</span>
+<span class="ln">  output$estaciones &lt;- renderTable({</span>
+<span class="ln">    message("buscando: '", buscar(), "'")</span>
+<span class="ln">    e &lt;- estaciones[grepl(buscar(), estaciones$nombre, ignore.case = TRUE),</span>
+<span class="ln">                    c("estacion_id", "nombre", "barrio", "capacidad")]</span>
+<span class="ln">    e$salidas &lt;- as.integer(table(factor(elegidos()$estacion_origen,</span>
+<span class="ln">                                         levels = e$estacion_id)))</span>
+<span class="ln">    e</span>
+<span class="ln">  })</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><ol class="steps" start="4" style="counter-reset:st 3"><li><span>En la consola de R, activa el registro y corre la aplicación:</span></li></ol><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln">reactlog::reactlog_enable()</span>
+<span class="ln">shiny::runApp("~/bicis/app-viajes")</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><ol class="steps" start="5" style="counter-reset:st 4"><li><span>En la página, escribe «puente» rápido en la caja de búsqueda, mueve la hora y cambia el barrio. Mira la consola.</span></li><li><span>Con la página enfocada, pulsa Ctrl+F3 (en macOS, Cmd+F3) para abrir reactlog en una pestaña nueva. Si no abre, detén la aplicación y escribe <code>shiny::reactlogShow()</code> en la consola.</span></li><li><span>En reactlog, avanza paso a paso con las flechas y busca el nodo <code>elegidos</code> y el de <code>buscar</code>.</span></li></ol><p><b>Qué observar:</b> al escribir «puente» rápido aparece <b>un solo</b> mensaje «buscando: 'puente'», no seis: <code>debounce()</code> esperó a que terminaras. En reactlog ves el mismo grafo que este capítulo dibuja a mano: las entradas a la izquierda, <code>elegidos</code> en el medio con flechas hacia las cuatro salidas, y la búsqueda como una rama aparte que solo llega a la tabla. Al mover la hora, la tabla se recalcula (usa <code>elegidos()</code>) pero <code>buscar</code> no.</p></div></section>
+<section><h2>Valores reactivos propios: <code>reactiveVal()</code> y <code>reactiveValues()</code></h2><div class="prose"><p>Las entradas son fuentes que controla la persona. A veces la aplicación necesita <b>su propio estado</b>: cuántas veces se pulsó «Agregar a revisar», qué estaciones marcó Cecilia para el camión de la mañana, cuál fue la última estación en la que se hizo clic en el mapa. Ese estado tiene que ser una fuente, para que las salidas que lo leen se actualicen solas cuando cambia. Una variable común de R no sirve: Shiny no se entera de que cambió.</p><ul><li><b><code>reactiveVal(valor_inicial)</code></b> crea una fuente con un solo valor. Se lee llamándola sin argumentos, <code>revisar()</code>, y se escribe llamándola con el valor nuevo, <code>revisar(c(revisar(), "E10"))</code>.</li><li><b><code>reactiveValues(a = 1, b = 2)</code></b> crea una lista de fuentes: se lee y se escribe con <code>$</code>, como <code>estado$marcadas</code>. Cada elemento es una fuente aparte: leer <code>estado$marcadas</code> no crea dependencia de <code>estado$ultima</code>.</li></ul><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln">revisar &lt;- reactiveVal(character(0))</span>
+<span class="ln"></span>
+<span class="ln">observeEvent(input$agregar, {</span>
+<span class="ln">  revisar(union(revisar(), input$estacion))</span>
+<span class="ln">})</span>
+<span class="ln"></span>
+<span class="ln">output$lista &lt;- renderText(paste(revisar(), collapse = ", "))</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><p>La escritura casi siempre va dentro de un <code>observeEvent()</code>, porque cambiar estado es un efecto. Observa que dentro del <code>observeEvent()</code> se lee <code>revisar()</code> para agregarle una estación: ahí no hay problema, porque <code>observeEvent()</code> lee aislado todo lo que no es su disparador. Ese mismo patrón dentro de un <code>observe()</code> común es el primero de los errores de la sección siguiente.</p></div><div class="ml"><b>En la práctica</b><p>Cecilia Mora, que coordina el camión de rebalanceo, le pidió a Gabriela un botón para armar cada noche la lista de estaciones que el camión debe llenar a primera hora. Gabriela lo resolvió con un <code>reactiveVal()</code> que guarda las estaciones marcadas, un <code>observeEvent()</code> por cada botón («Agregar», «Quitar», «Vaciar») y una salida que muestra la lista con la capacidad de cada estación. La primera lista que armó Cecilia tenía las cuatro estaciones de Las Lomas, las que se vacían antes de las 9. El estado vive en la sesión: si Cecilia cierra la pestaña, la lista se pierde. Guardarla en un archivo o una base de datos es un efecto más dentro del <code>observeEvent()</code>.</p></div></section>
+<section><h2>Errores comunes: bucles reactivos y cálculos repetidos</h2><div class="prose"><p>Casi todos los problemas de reactividad caen en unos pocos patrones. Conocerlos de antemano ahorra horas frente a una aplicación que se congela o que tarda sin razón aparente.</p></div><figure class="fig fig-esquema" id="11-diagrama-5"><div class="lienzo"><svg viewBox="0 0 900 400" style="min-width:720px;font-variant-ligatures:none" role="img" aria-label="Dos errores comunes: a la izquierda, un bucle reactivo en el que un observador lee y escribe el mismo valor reactivo y se vuelve a disparar sin fin, y su corrección con isolate u observeEvent; a la derecha, tres salidas que leen el mismo archivo por separado, tres lecturas por cambio, y su corrección con un reactive compartido que lo lee una vez">
+<defs><marker id="c11d5-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="fl-muted"/></marker>
+<marker id="c11d5-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="k-warm"/></marker></defs>
+<text x="20" y="26" class="t t-b">1 · El bucle reactivo</text>
+<rect x="20" y="40" width="410" height="220" rx="10" class="caja"/>
+<text x="36" y="66" class="t t-s t-mono">cuenta &lt;- reactiveVal(0)</text>
+<text x="36" y="86" class="t t-s t-mono">observe({</text>
+<text x="52" y="106" class="t t-s t-mono">cuenta(<tspan class="k-warm t-b">cuenta()</tspan> + 1)  <tspan class="k-warm"># lee y escribe</tspan></text>
+<text x="36" y="126" class="t t-s t-mono">})</text>
+<rect x="60" y="160" width="130" height="40" rx="6" class="c-tra"/><text x="125" y="185" class="t t-s t-mono" text-anchor="middle">cuenta</text>
+<rect x="260" y="160" width="130" height="40" rx="6" class="c-apl"/><text x="325" y="185" class="t t-s t-mono" text-anchor="middle">observe()</text>
+<path d="M190 170 C220 150 230 150 256 170" class="ln s-warm" style="stroke-width:2" marker-end="url(#c11d5-w)"/>
+<path d="M260 192 C230 214 220 214 194 192" class="ln s-warm" style="stroke-width:2" marker-end="url(#c11d5-w)"/>
+<text x="225" y="146" class="t t-xs k-warm" text-anchor="middle">INVALIDA</text>
+<text x="225" y="232" class="t t-xs k-warm" text-anchor="middle">ESCRIBE</text>
+<text x="36" y="252" class="t t-s k-warm">se vuelve a disparar sin fin: la sesión no responde</text>
+<rect x="20" y="276" width="410" height="110" rx="10" class="c-enl"/>
+<text x="36" y="298" class="t t-xs t-b k-enl">CORRECCIÓN</text>
+<text x="36" y="320" class="t t-s t-mono">observeEvent(input$sumar, {</text>
+<text x="52" y="340" class="t t-s t-mono">cuenta(cuenta() + 1)</text>
+<text x="36" y="360" class="t t-s t-mono">})</text>
+<text x="230" y="340" class="t t-s">o <tspan class="t-mono">isolate(cuenta())</tspan></text>
+<text x="470" y="26" class="t t-b">2 · El cálculo repetido</text>
+<rect x="470" y="40" width="410" height="220" rx="10" class="caja"/>
+<rect x="490" y="60" width="120" height="40" rx="6" class="d-casa"/><text x="550" y="85" class="t t-s t-mono" text-anchor="middle">viajes.csv</text>
+<rect x="730" y="56" width="130" height="34" rx="6" class="c-apl"/><text x="795" y="78" class="t t-s t-mono" text-anchor="middle">output$a</text>
+<rect x="730" y="106" width="130" height="34" rx="6" class="c-apl"/><text x="795" y="128" class="t t-s t-mono" text-anchor="middle">output$b</text>
+<rect x="730" y="156" width="130" height="34" rx="6" class="c-apl"/><text x="795" y="178" class="t t-s t-mono" text-anchor="middle">output$c</text>
+<path d="M610 76 L726 73" class="ln s-warm" marker-end="url(#c11d5-w)"/>
+<path d="M610 82 C660 90 680 120 726 123" class="ln s-warm" marker-end="url(#c11d5-w)"/>
+<path d="M610 90 C650 120 670 170 726 173" class="ln s-warm" marker-end="url(#c11d5-w)"/>
+<text x="490" y="130" class="t t-s t-mono">read.csv(…)</text>
+<text x="490" y="148" class="t t-s t-mono">dentro de cada</text>
+<text x="490" y="166" class="t t-s t-mono">render…()</text>
+<text x="486" y="236" class="t t-s k-warm">3 lecturas del archivo en cada cambio</text>
+<rect x="470" y="276" width="410" height="110" rx="10" class="c-enl"/>
+<text x="486" y="298" class="t t-xs t-b k-enl">CORRECCIÓN</text>
+<text x="486" y="320" class="t t-s t-mono">datos &lt;- reactive(read.csv(…))</text>
+<text x="486" y="342" class="t t-s t-mono">output$a &lt;- renderPlot(… datos() …)</text>
+<text x="486" y="368" class="t t-s">1 lectura, y las tres salidas usan el valor guardado</text>
+</svg></div><figcaption><b>Los dos errores que más cuestan.</b> A la izquierda, el bucle reactivo: un <code>observe()</code> lee <code>cuenta()</code> y la escribe; cada escritura invalida al observador, que corre de nuevo y vuelve a escribir, sin fin. Abajo, la corrección: disparar con <code>observeEvent()</code> o leer con <code>isolate()</code>. A la derecha, el cálculo repetido: tres salidas leen el archivo por separado, tres lecturas por cambio. Abajo, la corrección: un <code>reactive()</code> que lee una vez y comparte el valor guardado.</figcaption></figure><div class="prose"><p><b>El bucle reactivo.</b> Un observador que lee un valor reactivo y lo escribe se invalida a sí mismo: al escribir, avisa a quienes lo leyeron, y el primero de la lista es él mismo. Vuelve a correr, vuelve a escribir, y la sesión queda girando sin responder. La corrección es separar lo que dispara de lo que se lee: <code>observeEvent(input$sumar, cuenta(cuenta() + 1))</code>, o <code>cuenta(isolate(cuenta()) + 1)</code> si de verdad tiene que ser un <code>observe()</code>.</p><p><b>El cálculo repetido.</b> Una función común, un <code>read.csv()</code> o un filtro copiados en cada <code>render*()</code> se ejecutan una vez por salida y por cambio. No da error ni resultados distintos: solo hace la aplicación lenta, y empeora con cada salida nueva. La corrección es subir ese trabajo a un <code>reactive()</code> compartido y, si no depende de ninguna entrada, sacarlo del servidor para que corra una sola vez al arrancar.</p><p>Otros tres tropiezos frecuentes:</p><ul><li><b>Leer un valor reactivo fuera de un contexto reactivo.</b> Escribir <code>print(input$hora)</code> suelto dentro del servidor da el error «<i>Operation not allowed without an active reactive context</i>» (operación no permitida sin un contexto reactivo activo). Los valores reactivos solo se pueden leer dentro de <code>reactive()</code>, <code>render*()</code>, <code>observe()</code> o <code>isolate()</code>, que son los lugares donde Shiny puede anotar la dependencia.</li><li><b>Usar <code>observe()</code> para calcular.</b> Un observador que hace <code>v &lt;&lt;- filtrar(...)</code> guarda el valor en una variable común: las salidas que lean <code>v</code> no se enteran de que cambió. Si lo que quieres es un valor, es un <code>reactive()</code>.</li><li><b>Olvidar los paréntesis.</b> <code>elegidos</code> es la expresión reactiva; <code>elegidos()</code> es su valor. <code>nrow(elegidos)</code> da un error poco claro sobre un objeto de clase <code>reactiveExpr</code>.</li></ul></div></section>
+<section><h2>La idea clave</h2><div class="prose"><p>Shiny no ejecuta tu servidor de arriba abajo: mantiene un grafo de quién lee a quién, que descubre mientras corre. Las fuentes cambian, los conductores (<code>reactive()</code>) calculan y guardan, y los puntos finales (salidas y observadores) hacen algo visible. Cuando una fuente cambia, un aviso de invalidación corre hacia adelante sin calcular nada; después, los puntos finales invalidados se ejecutan y tiran de los conductores, que se recalculan solo si estaban vencidos y una sola vez. Tu trabajo es declarar bien las dependencias: valores con <code>reactive()</code>, efectos con observadores, estado con <code>reactiveVal()</code>, y el tiempo con <code>isolate()</code>, <code>bindEvent()</code>, <code>debounce()</code> y <code>throttle()</code>. El grafo decide el resto.</p></div></section>
+<section><h2>Pruébate</h2><div class="quiz"><h3>Pruébate</h3><details><summary>¿Qué diferencia hay entre una función común y una expresión creada con <code>reactive()</code> cuando cuatro salidas la llaman?</summary><p>La función común se ejecuta cuatro veces, una por salida. La expresión reactiva se ejecuta una vez, guarda su resultado y las otras tres salidas reciben el valor guardado, hasta que una de sus dependencias cambie.</p></details><details><summary>En el grafo de la aplicación de viajes, ¿qué se recalcula si cambia <code>input$barras</code>?</summary><p>Solo <code>output$grafico</code>, que es el único que lee las barras. Usa los datos filtrados guardados en <code>filtrados()</code>, así que no se vuelve a filtrar ni a leer el archivo.</p></details><details><summary>¿Qué viaja por el grafo en la fase de invalidación: valores o avisos?</summary><p>Solo avisos. Los nodos quedan marcados como invalidados; los valores se calculan después, cuando los puntos finales invalidados se ejecutan y los piden.</p></details><details><summary>Tienes un modelo que tarda diez segundos y quieres que corra solo al pulsar «Calcular». ¿Qué usas?</summary><p><code>reactive(...) |&gt; bindEvent(input$calcular)</code> (o <code>observeEvent()</code> si es un efecto): la expresión depende solo del botón y lee todo lo demás sin crear dependencias.</p></details><details><summary>¿Por qué este código congela la aplicación: <code>observe({ cuenta(cuenta() + 1) })</code>?</summary><p>Porque el observador lee <code>cuenta()</code> y la escribe: al escribirla se invalida a sí mismo, corre de nuevo y vuelve a escribir, en un bucle sin fin. Se corrige con <code>observeEvent()</code> o leyendo con <code>isolate(cuenta())</code>.</p></details><details><summary>¿Cuándo conviene <code>debounce()</code> y cuándo <code>throttle()</code>?</summary><p><code>debounce()</code> cuando solo importa el valor final de una ráfaga, como una búsqueda mientras se escribe; <code>throttle()</code> cuando quieres resultados intermedios a un ritmo limitado mientras algo se sigue moviendo.</p></details></div></section>
+<section><h2>Para investigar</h2><div class="investiga"><h3>Para investigar</h3><p class="hint">Estas preguntas no se responden en el capítulo: búscalas por tu cuenta.</p><ol><li>¿Qué es el patrón de diseño observador (<i>observer pattern</i>) y en qué se parece y se diferencia del grafo reactivo de Shiny?<small>Pista: busca el libro de patrones de diseño de Gamma y otros (1994).</small></li><li>¿Qué es un <i>glitch</i> en programación reactiva y por qué el orden «primero invalidar, después recalcular» lo evita?</li><li>¿Para qué sirven <code>reactivePoll()</code> y <code>reactiveFileReader()</code>, y cómo se combinarían con un archivo de viajes que Ignacio actualiza cada hora?<small>Pista: documentación de Shiny.</small></li><li>¿Qué son las «señales» (<i>signals</i>) en bibliotecas de JavaScript como SolidJS, Preact o Angular, y qué tienen en común con <code>reactiveVal()</code>?</li><li>¿Qué hace el argumento <code>priority</code> de <code>observe()</code> y cuándo haría falta cambiarlo?</li></ol></div></section>
+<section><h2>Para saber más</h2><div class="vids"><span>Para saber más</span><a class="vid" href="https://mastering-shiny.org/basic-reactivity.html" target="_blank" rel="noopener">Mastering Shiny, capítulo 3: reactividad básica <small>lectura</small></a><a class="vid" href="https://mastering-shiny.org/reactive-graph.html" target="_blank" rel="noopener">Mastering Shiny, capítulo 14: el grafo reactivo <small>lectura</small></a><a class="vid" href="https://shiny.posit.co/r/articles/build/reactivity-overview/" target="_blank" rel="noopener">Reactividad: una introducción (Posit) <small>artículo</small></a><a class="vid" href="https://rstudio.github.io/reactlog/" target="_blank" rel="noopener">reactlog: el grafo reactivo de tu aplicación <small>documentación</small></a></div></section>
+<label class="got"><input type="checkbox" id="got"> Lo tengo claro</label>
+<nav class="pager" id="pager" aria-label="Capítulo anterior y siguiente"></nav>
+</main>
+</div>
+<footer><span>Curso abierto de aaramirez.github.io.</span><span>Sitio publicado: <a href="https://github.com/aaramirez/programacion-r" target="_blank" rel="noopener">github.com/aaramirez/programacion-r</a></span></footer>
+</div>
+<script src="assets/lab.js"></script>
+<script>
+(function(){
+  const {$}=window.Lab;
+  const raiz=document.querySelector('[id="11-lab-2"]');
+  const URL_APP=$('#c11l2-tab').href;
+  $('#c11l2-abrir').addEventListener('click',()=>{
+    const m=$('#c11l2-marco');if(m.querySelector('iframe'))return;
+    const f=document.createElement('iframe');f.src=URL_APP;f.title='Aplicación Shiny en Shinylive';f.setAttribute('allow','clipboard-write');
+    m.appendChild(f);$('#c11l2-abrir').disabled=true;
+    $('#c11l2-estado').textContent='Cargando R en tu navegador… el recuadro se llena cuando la aplicación arranca.';
+    f.addEventListener('load',()=>{$('#c11l2-estado').textContent='Shinylive cargado: si el recuadro sigue en blanco, R todavía está arrancando (espera unos segundos más).';});
+  });
+})();
+</script>
+<script>
+(function(){
+  const {$}=window.Lab;
+  const raiz=document.querySelector('[id="11-lab-1"]');
+  const NS='http://www.w3.org/2000/svg';
+  const MESES=['marzo','abril','mayo','junio','julio','agosto'];
+  const ESTACIONES=['E16 Puente Viejo','E06 Ciudad Universitaria','E10 Mirador','E24 Puerto Nuevo'];
+  // Nodos del grafo: tipo f (fuente), c (conductor), p (punto final)
+  const N={
+    mes:{t:'f',txt:'input$mes',x:6,y:40},
+    estacion:{t:'f',txt:'input$estacion',x:6,y:110},
+    hora:{t:'f',txt:'input$hora',x:6,y:180},
+    barras:{t:'f',txt:'input$barras',x:6,y:250},
+    datos:{t:'c',txt:'datos()',x:172,y:62,deps:['mes']},
+    filtrados:{t:'c',txt:'filtrados()',x:172,y:160,deps:['datos','estacion','hora']},
+    resumen:{t:'p',txt:'output$resumen',x:338,y:40,deps:['datos']},
+    grafico:{t:'p',txt:'output$grafico',x:338,y:160,deps:['filtrados','barras']},
+    tabla:{t:'p',txt:'output$tabla',x:338,y:250,deps:['filtrados']}
+  };
+  const QUE={datos:'lee el archivo del mes',filtrados:'filtra por estación y hora',resumen:'cuenta los viajes del mes',grafico:'dibuja el histograma',tabla:'arma la tabla'};
+  const svg=$('#c11l1-svg');
+  const el=(n,a,p)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);(p||svg).appendChild(e);return e;};
+  let W=116;const H=34;const aristas={};let modo=null;
+  for(const k in N){N[k].x0=N[k].x;N[k].inv=false;N[k].veces=0;}
+  // Dibuja el grafo; en pantallas angostas usa nombres cortos y columnas más juntas para que el texto se lea
+  function construir(){
+    const estrecho=svg.clientWidth>0&&svg.clientWidth<480;
+    if(estrecho===modo)return;modo=estrecho;
+    while(svg.firstChild)svg.removeChild(svg.firstChild);
+    W=estrecho?88:116;const col=estrecho?[4,146,288]:[6,172,338];
+    svg.setAttribute('viewBox',estrecho?'0 0 380 300':'0 0 460 300');
+    const cab=estrecho?[['FUENTES',48,'input$…'],['CONDUCTORES',190,''],['FINALES',332,'output$…']]:[['FUENTES',64,''],['CONDUCTORES',230,''],['PUNTOS FINALES',396,'']];
+    cab.forEach(([t,x,sub])=>{el('text',{x,y:14,'text-anchor':'middle',class:'col'}).textContent=t;if(sub)el('text',{x,y:26,'text-anchor':'middle',class:'col'}).textContent=sub;});
+    for(const k in N){const n=N[k];n.x=col[{f:0,c:1,p:2}[n.t]];}
+    const defs=el('defs',{});const m=el('marker',{id:'c11l1-fl',viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:4,markerHeight:4,orient:'auto'},defs);
+    el('path',{d:'M0,0 L10,5 L0,10 z',style:'fill:var(--muted)'},m);
+    for(const k in N){(N[k].deps||[]).forEach(d=>{
+      const a=N[d],b=N[k];let ruta;
+      if(a.x===b.x){const x=a.x+W/2;ruta=`M${x},${a.y+H} L${x},${b.y-6}`;}
+      else{const x1=a.x+W,y1=a.y+H/2,x2=b.x-6,y2=b.y+H/2,mx=(x1+x2)/2;ruta=`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;}
+      aristas[d+'>'+k]=el('path',{d:ruta,class:'arista','marker-end':'url(#c11l1-fl)'});
+    });}
+    for(const k in N){const n=N[k];const g=el('g',{class:'nodo '+n.t});
+      el('rect',{x:n.x,y:n.y,width:W,height:H,rx:n.t==='c'?17:6},g);
+      const t=el('text',{x:n.x+W/2,y:n.y+H/2+5,'text-anchor':'middle',style:estrecho?'font-size:14px':''},g);
+      t.textContent=estrecho?n.txt.replace(/^(input|output)\$/,''):n.txt;
+      n.cont=n.t!=='f'?el('text',{x:n.x+W-4,y:n.y-5,'text-anchor':'end',class:'cont'},g):null;
+      n.g=g;}
+    if(typeof pintar==='function'&&ok)pintar();
+  }
+  let ok=false;
+  construir();new ResizeObserver(()=>construir()).observe(svg);
+  // Estado
+  const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let cola=[],timer=null,evitados=0,ocupado=false;
+  const log=$('#c11l1-log');
+  const linea=(txt,fase)=>{const li=document.createElement('li');if(fase)li.className='fase';li.innerHTML=txt;log.appendChild(li);log.scrollTop=log.scrollHeight;};
+  const deps=k=>(N[k].deps||[]).filter(d=>!(k==='grafico'&&d==='barras'&&$('#c11l1-iso').checked));
+  const hijos=k=>Object.keys(N).filter(h=>deps(h).includes(k));
+  function pintar(){
+    for(const k in N){const n=N[k];n.g.classList.toggle('inv',n.inv);if(n.cont)n.cont.textContent=n.veces+'×';}
+    N.tabla.g.classList.toggle('oculto',$('#c11l1-oc').checked);
+    aristas['barras>grafico'].classList.toggle('iso',$('#c11l1-iso').checked);
+    $('#c11l1-lect').textContent=N.datos.veces;$('#c11l1-filt').textContent=N.filtrados.veces;
+    $('#c11l1-graf').textContent=N.grafico.veces;$('#c11l1-evit').textContent=evitados;
+  }
+  const quitarMarcas=()=>{svg.querySelectorAll('.run,.cambio').forEach(e=>e.classList.remove('run','cambio'));svg.querySelectorAll('.viva').forEach(e=>e.classList.remove('viva'));};
+  // Construye la lista de pasos de un cambio: primero invalida, después vacía (flush) los puntos finales
+  function planear(fuente){
+    const pasos=[];
+    if(fuente){
+      pasos.push(()=>{quitarMarcas();N[fuente].g.classList.add('cambio');linea('Cambió <b>'+N[fuente].txt+'</b>: fase de invalidación','fase');});
+      let frente=[fuente];const vistos=new Set();
+      while(frente.length){
+        const sig=[];
+        frente.forEach(f=>hijos(f).forEach(h=>{if(!vistos.has(h)){vistos.add(h);sig.push([f,h]);}}));
+        if(!sig.length)break;
+        pasos.push(()=>{sig.forEach(([f,h])=>{N[h].inv=true;aristas[f+'>'+h].classList.add('viva');linea(N[h].txt+' queda <i>invalidado</i> (le avisa '+N[f].txt+')');});pintar();});
+        frente=sig.map(s=>s[1]);
+      }
+      if(!vistos.size)pasos.push(()=>linea('Nadie depende de '+N[fuente].txt+' (o lo lee con <code>isolate()</code>): no se invalida nada'));
+    }
+    pasos.push(()=>{quitarMarcas();linea('Fase de recálculo: Shiny vuelve a ejecutar los puntos finales invalidados','fase');});
+    ['resumen','grafico','tabla'].forEach(p=>{
+      pasos.push(()=>{
+        quitarMarcas();const n=N[p];
+        if(!n.inv){linea(n.txt+' sigue vigente: no se ejecuta');evitados++;pintar();return;}
+        if(p==='tabla'&&$('#c11l1-oc').checked){linea(n.txt+' está oculta: queda invalidada y espera a que la muestren');return;}
+        n.g.classList.add('run');
+        const pedir=k=>{deps(k).forEach(d=>{const nd=N[d];if(nd.t!=='c')return;
+          if(nd.inv){pedir(d);nd.inv=false;nd.veces++;nd.g.classList.add('run');linea('&nbsp;&nbsp;'+n.txt+' pide '+nd.txt+' → estaba invalidado: <b>se recalcula</b> ('+QUE[d]+')');}
+          else{evitados++;linea('&nbsp;&nbsp;'+n.txt+' pide '+nd.txt+' → vigente: <b>usa el valor guardado</b>');}
+          aristas[d+'>'+k].classList.add('viva');});};
+        pedir(p);n.inv=false;n.veces++;linea(n.txt+' se ejecuta: '+QUE[p]);pintar();
+      });
+    });
+    pasos.push(()=>{quitarMarcas();explicar(fuente);});
+    return pasos;
+  }
+  function explicar(f){
+    const o=$('#c11l1-out');
+    if(!f){o.innerHTML='<span><b>Arranque:</b> al abrir la aplicación todo está invalidado y cada salida se ejecuta una vez, pidiendo lo que necesita. Ahora cambia una entrada.</span>';return;}
+    const txt={
+      mes:'Cambió el mes: hay que leer otro archivo, así que se invalida todo lo que cuelga de <code>datos()</code>. Es el único cambio que vuelve a leer el archivo.',
+      estacion:'Cambió la estación: <code>datos()</code> no depende de ella, así que <b>no se volvió a leer el archivo</b>; solo se refiltró una vez, y el gráfico y la tabla usaron ese mismo resultado. El resumen del mes ni se enteró.',
+      hora:'Cambió la hora: igual que con la estación, se refiltra una sola vez y el archivo no se toca.',
+      barras:$('#c11l1-iso').checked?'Cambió el número de barras, pero el gráfico lo lee con <code>isolate()</code>: no queda como dependencia y <b>nada se invalida</b>. El nuevo valor se usará la próxima vez que el gráfico se recalcule por otra razón (cambia la hora y mira).':'Cambió el número de barras: solo el gráfico depende de él. Se redibuja con los datos filtrados <b>guardados</b>: ni se lee el archivo ni se vuelve a filtrar.'
+    }[f];
+    const oc=$('#c11l1-oc').checked&&N.tabla.inv?' La tabla quedó invalidada pero oculta: Shiny no gasta tiempo en ella hasta que se vea (eso es el recálculo perezoso).':'';
+    o.innerHTML='<span>'+txt+oc+'</span>';
+  }
+  function correr(pasos){
+    cola=pasos;ocupado=true;
+    const paso=$('#c11l1-paso').checked;
+    $('#c11l1-sig').disabled=!paso;
+    const uno=()=>{const p=cola.shift();if(p)p();if(!cola.length){ocupado=false;$('#c11l1-sig').disabled=true;return false;}return true;};
+    if(paso){uno();return;}
+    if(reduce){while(uno());return;}
+    const tic=()=>{if(uno())timer=setTimeout(tic,520);};tic();
+  }
+  $('#c11l1-sig').addEventListener('click',()=>{const p=cola.shift();if(p)p();if(!cola.length){ocupado=false;$('#c11l1-sig').disabled=true;}});
+  function cambio(f){
+    if(timer){clearTimeout(timer);timer=null;}
+    while(cola.length)cola.shift()(); // termina el ciclo anterior al instante
+    correr(planear(f));
+  }
+  function iniciar(){
+    if(timer){clearTimeout(timer);timer=null;}cola=[];evitados=0;log.innerHTML='';
+    for(const k in N){N[k].veces=0;N[k].inv=N[k].t!=='f';}
+    pintar();linea('Arranque: todo empieza invalidado','fase');
+    const p=planear(null);p.shift();correr(p);
+  }
+  const sm=$('#c11l1-mes'),se=$('#c11l1-est');
+  MESES.forEach(x=>sm.add(new Option(x,x)));ESTACIONES.forEach(x=>se.add(new Option(x,x)));
+  sm.addEventListener('change',()=>cambio('mes'));se.addEventListener('change',()=>cambio('estacion'));
+  const hr=$('#c11l1-hora'),br=$('#c11l1-barras');
+  const ho=()=>$('#c11l1-hora-o').textContent=hr.value+':00',bo=()=>$('#c11l1-barras-o').textContent=br.value;
+  hr.addEventListener('input',ho);br.addEventListener('input',bo);
+  hr.addEventListener('change',()=>cambio('hora'));br.addEventListener('change',()=>cambio('barras'));
+  $('#c11l1-iso').addEventListener('change',()=>{pintar();linea($('#c11l1-iso').checked?'El gráfico ahora lee input$barras con isolate(): la flecha deja de ser dependencia':'El gráfico vuelve a depender de input$barras');});
+  $('#c11l1-oc').addEventListener('change',()=>{pintar();if(!$('#c11l1-oc').checked&&N.tabla.inv){linea('Mostraron la tabla: estaba invalidada, ahora sí se ejecuta','fase');correr([()=>{const n=N.tabla;if(N.filtrados.inv){N.filtrados.inv=false;N.filtrados.veces++;linea('&nbsp;&nbsp;output$tabla pide filtrados() → se recalcula');}else{evitados++;linea('&nbsp;&nbsp;output$tabla pide filtrados() → usa el valor guardado');}n.inv=false;n.veces++;linea('output$tabla se ejecuta: arma la tabla');pintar();}]);}});
+  $('#c11l1-rei').addEventListener('click',iniciar);
+  ok=true;ho();bo();iniciar();
+})();
+</script>
+<script>
+(function(){
+  const {$,tok,canvasWidget}=window.Lab;
+  const raiz=document.querySelector('[id="11-lab-3"]');
+  const VENTANA=8000; // ms visibles
+  let ev=[],t0=performance.now(),anim=null;
+  const ms=()=>+$('#c11l3-ms').value;
+  // Recalcula las tres políticas a partir de los tiempos de las teclas (en ms)
+  function politicas(now){
+    const W=ms(),crudo=ev.slice(),deb=[],thr=[];
+    for(let i=0;i<ev.length;i++){const sig=i+1<ev.length?ev[i+1]:Infinity;const fin=ev[i]+W;if(sig>fin&&fin<=now)deb.push(fin);}
+    let ultimo=-Infinity,pend=false;let i=0;
+    // simulación por eventos del throttle de Shiny: el primero pasa enseguida, luego como mucho uno por ventana
+    const tiempos=ev.slice();let t=0;
+    while(i<tiempos.length||pend){
+      const proxEv=i<tiempos.length?tiempos[i]:Infinity;const proxDisp=pend?ultimo+W:Infinity;
+      if(proxDisp<=proxEv){if(proxDisp>now)break;thr.push(proxDisp);ultimo=proxDisp;pend=false;}
+      else{t=proxEv;i++;if(t-ultimo>=W){thr.push(t);ultimo=t;}else pend=true;}
+    }
+    return [crudo,deb,thr];
+  }
+  const w=canvasWidget($('#c11l3-c'),w=>w<480?.72:.42,(ctx,wd,h)=>{
+    const now=performance.now()-t0;ctx.clearRect(0,0,wd,h);
+    const L=wd<480?86:110,R=10,filas=['input$buscar','sin control','debounce()','throttle()'];
+    const cols=[tok('--c-tra'),tok('--muted'),tok('--good'),tok('--c-red')];
+    const [cr,de,th]=politicas(now),datos=[ev,cr,de,th];
+    const fh=(h-26)/4,X=t=>L+(t-(now-VENTANA))/VENTANA*(wd-L-R);
+    ctx.font='12px '+tok('--f-mono');ctx.textBaseline='middle';
+    filas.forEach((f,k)=>{const y=6+fh*k+fh/2;
+      ctx.fillStyle=tok('--ink');ctx.textAlign='left';ctx.fillText(f,6,y);
+      ctx.strokeStyle=tok('--grid');ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(wd-R,y);ctx.stroke();
+      ctx.fillStyle=cols[k];
+      datos[k].forEach(t=>{const x=X(t);if(x<L)return;if(k===0){ctx.fillRect(x-1,y-9,2.5,18);}else{ctx.beginPath();ctx.arc(x,y,6,0,7);ctx.fill();}});
+    });
+    ctx.fillStyle=tok('--muted');ctx.textAlign='center';ctx.font='11px '+tok('--f-display');
+    for(let s=0;s<=8;s+=2){const x=L+(VENTANA-s*1000)/VENTANA*(wd-L-R);ctx.textAlign=s?'center':'right';ctx.fillText(s?('−'+s+' s'):'ahora',s?x:x+2,h-10);}
+    $('#c11l3-n0').textContent=ev.length;$('#c11l3-n1').textContent=cr.length;$('#c11l3-n2').textContent=de.length;$('#c11l3-n3').textContent=th.length;
+  });
+  function bucle(){w();const now=performance.now()-t0;const activo=ev.length&&now-ev[ev.length-1]<VENTANA+ms();if(activo)anim=requestAnimationFrame(bucle);else{anim=null;}explicar();}
+  const arrancar=()=>{if(!anim)anim=requestAnimationFrame(bucle);};
+  function explicar(){
+    if(!ev.length)return;const now=performance.now()-t0;const [cr,de,th]=politicas(now);
+    $('#c11l3-out').innerHTML=`<span>Llegaron <b>${ev.length}</b> cambios. Sin control, la búsqueda se habría ejecutado <b>${cr.length}</b> veces. Con <code>debounce(${ms()})</code> espera a que dejes de escribir ${ms()} ms: <b>${de.length}</b> ${de.length===1?'vez':'veces'} y siempre con el texto final. Con <code>throttle(${ms()})</code> responde a la primera tecla y luego como mucho una vez cada ${ms()} ms mientras sigas: <b>${th.length}</b> ${th.length===1?'vez':'veces'}.</span>`;
+  }
+  $('#c11l3-txt').addEventListener('input',()=>{ev.push(performance.now()-t0);ev=ev.filter(t=>t>performance.now()-t0-VENTANA-3000);arrancar();});
+  // ráfaga con semilla: 14 teclas con pausas de 60 a 260 ms y un silencio a la mitad
+  $('#c11l3-raf').addEventListener('click',()=>{
+    let s=7;const rnd=()=>{s=(s*1103515245+12345)%2147483648;return s/2147483648;};
+    let t=0;const txt='puente viejo';const caja=$('#c11l3-txt');caja.value='';
+    [...txt].forEach((ch,i)=>{t+=i===7?900:60+rnd()*200;setTimeout(()=>{caja.value+=ch;caja.dispatchEvent(new Event('input'));},t);});
+  });
+  $('#c11l3-lim').addEventListener('click',()=>{ev=[];$('#c11l3-txt').value='';w();$('#c11l3-out').innerHTML='Escribe en la caja o simula una ráfaga.';});
+  const o=()=>$('#c11l3-ms-o').textContent=ms()+' ms';
+  $('#c11l3-ms').addEventListener('input',()=>{o();w();explicar();});o();
+})();
+</script>
+</body>
+</html>

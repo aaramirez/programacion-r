@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="es">
+<head>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-KX76XF8R');</script>
+<!-- End Google Tag Manager -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Probar y publicar · R y aplicaciones interactivas · R y aplicaciones interactivas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Programación en R, gráficos dinámicos y aplicaciones Shiny para el análisis de datos: el lenguaje, el tidyverse, ggplot2, htmlwidgets, Quarto y Shiny, con código que se ejecuta en la página con webR.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400;1,8..60,600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KX76XF8R"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<div class="wrap" data-page="probar-y-publicar">
+<header class="topbar"><a class="brand" href="index.html">R y aplicaciones <b>interactivas</b></a><span class="eyebrow">Curso visual e interactivo · Datos e inteligencia artificial</span><a class="al-sitio" href="https://aaramirez.github.io/">← Todos los cursos</a></header>
+<div class="layout">
+<nav class="toc" id="toc" aria-label="Ruta de aprendizaje"></nav>
+<main>
+<header class="page-head"><span class="num">CAPÍTULO 13 DE 14</span><h1>Probar y publicar aplicaciones Shiny</h1><p class="lede">Una aplicación que solo corre en el portátil de Gabriela no le sirve a nadie más. Este capítulo la prueba sin abrirla, con testServer, y de punta a punta, con shinytest2; después la publica: como sitio estático con Shinylive, en shinyapps.io o Posit Connect, o en un contenedor propio, con los usuarios, el acceso y los secretos en su lugar.</p></header>
+<section><div class="prose"><p>Cuando Gabriela le mostró la aplicación de las tres tarjetas a Ignacio Peña, de sistemas, él no miró las cifras. Preguntó dos cosas: «¿Cómo sabes que sigue funcionando después de cada cambio?» y «¿Dónde va a vivir?». La primera pregunta la incomodó: su método era abrir la aplicación, hacer clic en todo y mirar. La segunda no la había pensado: la aplicación corría en su portátil, y cuando cerraba la tapa, desaparecía.</p><p>Este capítulo contesta las dos. Primero, las pruebas automáticas: las que corren el servidor sin navegador y las que abren la aplicación y hacen clic por ti. Después, las formas de publicar, de la más simple (un sitio estático que no necesita servidor) a la más controlada (un contenedor en la infraestructura propia), y cómo se decide entre ellas. Al final, lo que ninguna publicación debe olvidar: quién entra, con qué permiso y dónde quedan las contraseñas.</p></div></section>
+<section><h2>Pruebas del servidor con <code>testServer()</code></h2><div class="analogia"><b>Imagínalo así</b><p>Para revisar el motor de un auto no hace falta salir a la carretera. El mecánico lo pone en un banco de pruebas, acelera con una palanca, mide la temperatura y la presión, y sabe si funciona. Salir a la carretera sirve para otras cosas: los frenos, el volante, los ruidos. Una aplicación Shiny se prueba igual, primero en el banco y después en la calle.</p></div><div class="prose"><p>Una <b>prueba automática</b> (<i>automated test</i>) es código que ejecuta otro código y comprueba que el resultado es el esperado. El capítulo 06 presentó testthat para las funciones de un paquete: <code>expect_equal(balance(c(3, 5)), 2)</code>. En una aplicación Shiny, la parte difícil es la reactividad: un reactivo no se puede llamar como una función cualquiera, porque depende de entradas que en la vida real pone un usuario con el ratón.</p><p><code>testServer()</code> es el banco de pruebas. Recibe la función del servidor de un módulo (o de la aplicación) y un bloque de código que se ejecuta <b>dentro</b> de ese servidor, sin navegador. Ahí, <code>session$setInputs()</code> hace de usuario: fija valores de entrada como si alguien hubiera elegido una estación. Después se leen los reactivos por su nombre, las salidas con <code>output$...</code> y lo que el módulo devuelve con <code>session$returned()</code>.</p><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln">testServer(balanceServer, args = list(totales = totales), {</span>
+<span class="ln">  session$setInputs(estacion = "E10")</span>
+<span class="ln">  expect_equal(balance(), -1399)          # Las Lomas pierde bicis</span>
+<span class="ln">  session$setInputs(estacion = "E06")</span>
+<span class="ln">  expect_equal(output$texto, "E06 gana 100 bicis")</span>
+<span class="ln">  expect_equal(session$returned(), 100)</span>
+<span class="ln">})</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><p>Tres detalles. El argumento <code>args</code> pasa los datos que el módulo recibe en la aplicación real, y conviene que sean pequeños e inventados para la prueba: dos estaciones bastan para comprobar una resta. Las salidas de texto se leen tal cual; las de gráficos devuelven una lista con la imagen, que rara vez vale la pena comparar. Y <code>testServer()</code> respeta <code>req()</code>: antes de fijar la estación, leer <code>balance()</code> lanza el error silencioso de la clase <code>shiny.silent.error</code>, y eso también se puede comprobar.</p></div><figure class="fig fig-capas" id="13-diagrama-1"><div class="lienzo"><svg viewBox="0 0 920 400" style="min-width:700px;font-variant-ligatures:none" role="img" aria-label="La pirámide de pruebas de una aplicación Shiny: abajo muchas pruebas de funciones puras con testthat, rápidas y sin Shiny; en el medio pruebas del servidor con testServer, que fijan entradas y leen reactivos y salidas sin navegador; arriba pocas pruebas de punta a punta con shinytest2, que abren la aplicación en un Chrome sin ventana y comparan lo que ve el usuario">
+<text x="250" y="24" class="t t-xs t-b t-m" text-anchor="middle">CUÁNTAS Y QUÉ PRUEBAN</text>
+<text x="690" y="24" class="t t-xs t-b t-m" text-anchor="middle">QUÉ ATRAPA CADA NIVEL</text>
+
+<path d="M250 44 L330 150 L170 150 Z" class="d-inet"/>
+<text x="250" y="112" class="t t-b k-inet" text-anchor="middle">shinytest2</text>
+<text x="250" y="130" class="t t-s" text-anchor="middle">pocas</text>
+<path d="M165 158 L335 158 L410 258 L90 258 Z" class="c-tra"/>
+<text x="250" y="198" class="t t-b k-tra" text-anchor="middle">testServer()</text>
+<text x="250" y="216" class="t t-s" text-anchor="middle">varias por módulo</text>
+<text x="250" y="234" class="t t-s t-mono" text-anchor="middle">session$setInputs()</text>
+<path d="M85 266 L415 266 L480 352 L20 352 Z" class="c-apl"/>
+<text x="250" y="300" class="t t-b k-apl" text-anchor="middle">testthat sobre funciones puras</text>
+<text x="250" y="318" class="t t-s" text-anchor="middle">muchas: una por regla de negocio</text>
+<text x="250" y="336" class="t t-s t-mono" text-anchor="middle">expect_equal(balance(...), 3)</text>
+
+<line x1="500" y1="50" x2="500" y2="350" class="ln"/>
+<text x="508" y="60" class="t t-s t-m">lentas</text>
+<text x="508" y="76" class="t t-s t-m">frágiles</text>
+<text x="508" y="330" class="t t-s t-m">rápidas</text>
+<text x="508" y="346" class="t t-s t-m">estables</text>
+
+<rect x="572" y="44" width="330" height="106" rx="8" class="caja"/>
+<text x="586" y="66" class="t t-s">Abre la app en un Chrome sin ventana,</text>
+<text x="586" y="84" class="t t-s">hace clic y compara lo que se ve.</text>
+<text x="586" y="104" class="t t-s"><tspan class="t-b">Atrapa:</tspan> un id mal escrito en la interfaz,</text>
+<text x="586" y="122" class="t t-s">un JavaScript roto, una salida que no aparece.</text>
+<text x="586" y="140" class="t t-s t-m">Decenas de segundos por prueba.</text>
+<rect x="572" y="158" width="330" height="100" rx="8" class="caja"/>
+<text x="586" y="180" class="t t-s">Corre el servidor sin navegador: fija entradas</text>
+<text x="586" y="198" class="t t-s">y lee reactivos y salidas.</text>
+<text x="586" y="218" class="t t-s"><tspan class="t-b">Atrapa:</tspan> un reactivo que no se actualiza,</text>
+<text x="586" y="236" class="t t-s">un módulo que devuelve otra cosa, un req() que falta.</text>
+<text x="586" y="252" class="t t-s t-m">Menos de un segundo por prueba.</text>
+<rect x="572" y="266" width="330" height="86" rx="8" class="caja"/>
+<text x="586" y="288" class="t t-s">Llama funciones normales de R, sin Shiny.</text>
+<text x="586" y="308" class="t t-s"><tspan class="t-b">Atrapa:</tspan> la cuenta mal hecha, el filtro que</text>
+<text x="586" y="326" class="t t-s">deja pasar los NA, la fecha mal leída.</text>
+<text x="586" y="344" class="t t-s t-m">Milisegundos.</text>
+<text x="460" y="388" class="t t-s t-m" text-anchor="middle">Regla práctica: saca la lógica del servidor a funciones, y la base de la pirámide crece sola.</text>
+</svg></div><figcaption><b>La pirámide de pruebas de una aplicación Shiny.</b> Abajo, en rosa (el color de los paquetes y testthat), muchas pruebas de funciones puras: milisegundos cada una, una por regla de negocio. En el medio, en morado (Shiny), las pruebas del servidor con <code>testServer()</code>: fijan entradas y leen reactivos y salidas sin navegador. Arriba, pocas pruebas de punta a punta con shinytest2, que abren la aplicación en un navegador. A la derecha, qué atrapa cada nivel; el eje del centro va de lento y frágil (arriba) a rápido y estable (abajo).</figcaption></figure><div class="prose"><p>La pirámide explica dónde poner el esfuerzo. Cuanto más arriba, más se parece la prueba a un usuario real, pero también es más lenta y se rompe con cambios que no importan (un botón que se movió). Por eso conviene que la mayor parte de la lógica viva en <b>funciones puras</b>, como <code>limpiar()</code> y <code>totales_por_estacion()</code> del capítulo 12: se prueban con testthat sin Shiny, en milisegundos. <code>testServer()</code> se reserva para la conexión entre entradas, reactivos y salidas, y shinytest2 para unos pocos recorridos completos.</p></div><div class="lab" id="13-lab-2"><div class="lab-title"><span class="tag">Laboratorio</span><h3>Una prueba con <code>testServer()</code> que pasa de rojo a verde</h3></div><p class="hint">El módulo calcula el balance de una estación y la prueba espera −1.399 para E10 Mirador. Corre el paso 1: la prueba falla y dice qué valor vio y cuál esperaba. Corrige la resta en el código, vuelve a correr y mira el semáforo ponerse verde. El paso 3 prueba que <code>req()</code> detiene el cálculo cuando todavía no hay estación elegida.</p><style>
+[id="13-lab-2"] pre,[id="13-lab-2"] textarea,[id="13-lab-2"] code,[id="13-lab-2"] input{font-variant-ligatures:none!important}
+[id="13-lab-2"] .c13l2-estado{font:500 .85rem var(--f-display);color:var(--muted)}
+[id="13-lab-2"] .c13l2-estado.ok{color:var(--good)} [id="13-lab-2"] .c13l2-estado.warn{color:var(--warm)}
+[id="13-lab-2"] .btns{align-items:center}
+[id="13-lab-2"] .opciones{grid-template-columns:minmax(0,1fr);max-width:560px}
+[id="13-lab-2"] .c13l2-consola{border:1px solid var(--line);border-left:5px solid var(--c-tra);border-radius:6px;background:var(--paper);overflow:hidden}
+[id="13-lab-2"] .c13l2-cab{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 8px;border-bottom:1px solid var(--line);font:600 .72rem var(--f-display);color:var(--muted)}
+[id="13-lab-2"] .c13l2-sello{font:700 .66rem var(--f-display);letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:var(--mark);color:var(--ink)}
+[id="13-lab-2"] textarea{display:block;width:100%;box-sizing:border-box;min-height:300px;font:.8rem/1.5 var(--f-mono);padding:8px 10px;border:0;border-bottom:1px solid var(--line);background:var(--card);color:var(--ink);resize:vertical}
+[id="13-lab-2"] textarea:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+[id="13-lab-2"] pre.c13l2-log{margin:0;padding:8px 10px;font:.8rem/1.5 var(--f-mono);white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow-y:auto;color:var(--ink)}
+[id="13-lab-2"] .c13l2-err{color:var(--warm)}
+[id="13-lab-2"] .c13l2-semaforo{display:flex;align-items:center;gap:12px;border-radius:10px;padding:10px 14px;font:700 1.05rem var(--f-display);border:2px solid var(--line);background:var(--paper)}
+[id="13-lab-2"] .c13l2-semaforo i{width:22px;height:22px;border-radius:50%;background:var(--muted);flex:none}
+[id="13-lab-2"] .c13l2-semaforo.rojo{border-color:var(--warm);background:var(--warm-soft);color:var(--warm)}
+[id="13-lab-2"] .c13l2-semaforo.rojo i{background:var(--warm)}
+[id="13-lab-2"] .c13l2-semaforo.verde{border-color:var(--good);background:var(--good-soft);color:var(--good)}
+[id="13-lab-2"] .c13l2-semaforo.verde i{background:var(--good)}
+</style>
+<div class="opciones"><label>Paso
+  <select id="c13l2-ej"></select></label></div>
+<div class="btns">
+  <button type="button" class="primary" id="c13l2-cargar">Cargar R, shiny y testthat (unos 40 MB · puede tardar un minuto)</button>
+  <span class="c13l2-estado" id="c13l2-estado" aria-live="polite">R sin cargar · mientras tanto ves el resultado guardado</span>
+</div>
+<div class="c13l2-semaforo" id="c13l2-sem" aria-live="polite"><i aria-hidden="true"></i><span id="c13l2-sem-t"></span></div>
+<div class="c13l2-consola">
+  <div class="c13l2-cab"><span>El módulo y su prueba (puedes editarlos)</span><span class="c13l2-sello" id="c13l2-sello">guardado</span></div>
+  <textarea id="c13l2-cod" aria-label="Código de R con el módulo y su prueba (puedes editarlo)" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+  <pre class="c13l2-log" id="c13l2-log" role="log" aria-live="polite"></pre>
+</div>
+<div class="btns">
+  <button type="button" id="c13l2-run" disabled>Correr la prueba (Ctrl+Enter)</button>
+  <button type="button" id="c13l2-rest">Restaurar el paso</button>
+</div>
+<div class="readout texto" id="c13l2-out" aria-live="polite"></div></div><div class="prose"><p>El laboratorio muestra el ciclo que da nombre al <b>desarrollo guiado por pruebas</b> (<i>test-driven development</i>): primero una prueba que describe lo correcto y falla (rojo), después el cambio mínimo que la hace pasar (verde). No hace falta trabajar siempre así, pero cada error que se encuentra a mano merece una prueba que lo atrape la próxima vez.</p></div></section>
+<section><h2>Pruebas de punta a punta con shinytest2</h2><div class="prose"><p><code>testServer()</code> no ve la interfaz. Si en <code>ui</code> alguien escribe <code>ns("estaciones")</code> en lugar de <code>ns("estacion")</code>, el servidor y su prueba siguen perfectos, y la aplicación real no responde. Para eso están las <b>pruebas de punta a punta</b> (<i>end-to-end tests</i>): abren la aplicación de verdad, en un navegador, y la usan.</p><p>shinytest2 lo hace con un Chrome sin ventana, que controla con el paquete chromote. Su pieza central es <code>AppDriver</code>: arranca la aplicación en segundo plano, abre el navegador, y ofrece métodos para fijar entradas (<code>app$set_inputs()</code>), hacer clic (<code>app$click()</code>), esperar a que la aplicación termine de recalcular y guardar lo que se ve.</p><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln">test_that("cambiar la estación de la primera tarjeta cambia sus cifras", {</span>
+<span class="ln">  app &lt;- AppDriver$new(name = "tarjetas", height = 800, width = 1200)</span>
+<span class="ln">  app$set_inputs(`lomas-estacion` = "E11")</span>
+<span class="ln">  app$expect_values(output = "lomas-cifras")</span>
+<span class="ln">  app$stop()</span>
+<span class="ln">})</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><p>Aquí se usa el id <b>completo</b>, con el prefijo del módulo, porque la prueba habla con la página y no con el servidor. <code>expect_values()</code> guarda los valores de las entradas y salidas en un archivo de <b>instantánea</b> (<i>snapshot</i>) la primera vez que corre; las siguientes, compara contra ese archivo y falla si algo cambió. <code>expect_screenshot()</code> hace lo mismo con una captura, pero es frágil: una fuente distinta en otro sistema operativo ya la rompe. Lo más cómodo para empezar es <code>shinytest2::record_test("app12")</code>, que abre la aplicación con un panel lateral: haces clic, pulsas «Expect values» donde quieres comprobar algo, y escribe la prueba por ti.</p><p>Las instantáneas quedan en <code>tests/testthat/_snaps/</code> y se guardan en git junto con el código. Cuando un cambio es intencional (agregaste una columna a la tabla), <code>testthat::snapshot_accept()</code> acepta la nueva versión. Y para que nadie se olvide de correrlas, se ejecutan solas en cada cambio con un servicio de integración continua como GitHub Actions; eso está en el curso de <a href="https://aaramirez.github.io/devops/temario.html" target="_blank" rel="noopener">DevOps</a>.</p></div><div class="practica"><div class="practica-title"><span class="tag">En la terminal</span><h3>Pruebas para la aplicación de las tres tarjetas</h3></div><p>Vas a agregar a <code>~/bicis/app12</code> (la aplicación de la práctica del capítulo 12) pruebas del servidor y una prueba de punta a punta. Necesitas <code>install.packages(c("testthat", "shinytest2"))</code> y Chrome o Edge instalado (shinytest2 los busca solo).</p><p>Guarda esto como <code>~/bicis/app12/tests/testthat/setup-shinytest2.R</code>:</p><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln"># Carga las funciones de R/ antes de las pruebas</span>
+<span class="ln">shinytest2::load_app_env()</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><p>Esto como <code>~/bicis/app12/tests/testthat/test-tarjeta.R</code>:</p><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln"># Pruebas del servidor del módulo, sin navegador</span>
+<span class="ln">totales &lt;- data.frame(estacion_id = c("E06", "E10"), barrio = c("Universidad", "Las Lomas"),</span>
+<span class="ln">                      salidas = c(3190, 2894), llegadas = c(3290, 1495))</span>
+<span class="ln">totales$balance &lt;- totales$llegadas - totales$salidas</span>
+<span class="ln">validos &lt;- data.frame(estacion_origen = c("E10", "E10", "E06"),</span>
+<span class="ln">                      estacion_destino = c("E01", "E06", "E09"))</span>
+<span class="ln"></span>
+<span class="ln">test_that("la tarjeta devuelve la fila de la estación elegida", {</span>
+<span class="ln">  testServer(tarjetaServer, args = list(totales = totales, validos = validos), {</span>
+<span class="ln">    session$setInputs(estacion = "E10")</span>
+<span class="ln">    expect_equal(fila()$balance, -1399)</span>
+<span class="ln">    expect_equal(session$returned()$barrio, "Las Lomas")</span>
+<span class="ln">  })</span>
+<span class="ln">})</span>
+<span class="ln"></span>
+<span class="ln">test_that("la descarga trae solo los viajes de esa estación", {</span>
+<span class="ln">  testServer(tarjetaServer, args = list(totales = totales, validos = validos), {</span>
+<span class="ln">    session$setInputs(estacion = "E10")</span>
+<span class="ln">    expect_equal(nrow(read.csv(output$descarga)), 2)</span>
+<span class="ln">  })</span>
+<span class="ln">})</span>
+<span class="ln"></span>
+<span class="ln">test_that("limpiar quita duplicados, el taller y los re-anclajes", {</span>
+<span class="ln">  v &lt;- data.frame(inicio = c("2026-03-02 07:00:00", "2026-03-02 07:00:00", "2026-03-02 08:00:00", "2026-03-02 09:00:00"),</span>
+<span class="ln">                  fin = c("2026-03-02 07:20:00", "2026-03-02 07:20:00", "2026-03-02 08:15:00", "2026-03-02 09:00:30"),</span>
+<span class="ln">                  estacion_origen = c("E10", "E10", "E99", "E01"),</span>
+<span class="ln">                  estacion_destino = c("E06", "E06", "E01", "E01"))</span>
+<span class="ln">  expect_equal(nrow(limpiar(v)), 1)</span>
+<span class="ln">})</span></code></pre><button type="button" class="ver-todo" aria-expanded="false">Ver las 29 líneas</button><button type="button" class="copiar copiar-todo">Copiar</button></div><p>Y esto como <code>~/bicis/app12/tests/testthat/test-app.R</code>:</p><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln"># Prueba de punta a punta: abre la aplicación en un Chrome sin ventana</span>
+<span class="ln">library(shinytest2)</span>
+<span class="ln"></span>
+<span class="ln">test_that("cambiar la estación de la primera tarjeta cambia sus cifras", {</span>
+<span class="ln">  app &lt;- AppDriver$new(name = "tarjetas", height = 800, width = 1200)</span>
+<span class="ln">  app$set_inputs(`lomas-estacion` = "E11")</span>
+<span class="ln">  app$expect_values(output = "lomas-cifras")</span>
+<span class="ln">  app$stop()</span>
+<span class="ln">})</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><ol class="steps"><li><span>En la consola de R, corre todas las pruebas de la aplicación dos veces:</span></li></ol><div class="cmds"><div class="cmd-panel" data-so="win mac linux"><div class="cmd-l"><code>setwd("~/bicis")</code><button type="button" class="copiar">Copiar</button></div><div class="cmd-l"><code>shinytest2::test_app("app12")</code><button type="button" class="copiar">Copiar</button></div><div class="cmd-l"><code>shinytest2::test_app("app12")</code><button type="button" class="copiar">Copiar</button></div></div></div><ol class="steps" start="2" style="counter-reset:st 1"><li><span>Abre <code>app12/R/datos.R</code>, cambia <code>t$llegadas - t$salidas</code> por <code>t$salidas - t$llegadas</code> y corre las pruebas otra vez. Después déjalo como estaba.</span></li></ol><p><b>Qué observar:</b> la primera vez, las tres pruebas del servidor pasan en un segundo y la de punta a punta tarda bastante más (arranca la aplicación, lee los 72.283 viajes y abre Chrome); avisa que creó una instantánea nueva en <code>tests/testthat/_snaps/app/</code>. La segunda vez compara contra ella y pasa. Con la resta invertida, <code>test-tarjeta.R</code> sigue en verde, porque sus datos de prueba traen el balance ya calculado, pero la prueba de punta a punta falla: la tabla de E11 dice 962 en lugar de −962. Cada nivel de la pirámide atrapa errores distintos.</p></div></section>
+<section><h2>Shinylive: aplicaciones estáticas en GitHub Pages</h2><div class="prose"><p>Las aplicaciones de los laboratorios de este curso no tienen servidor. Corren con <b>Shinylive</b>, que empaqueta la aplicación con webR (R compilado a WebAssembly, capítulo 01) para que el propio navegador del visitante ejecute R y Shiny. El sitio que la publica solo entrega archivos, como cualquier página web.</p></div><figure class="fig fig-arquitectura" id="13-diagrama-2"><div class="lienzo"><svg viewBox="0 0 920 470" style="min-width:700px;font-variant-ligatures:none" role="img" aria-label="Dónde corre R en cada forma de publicar: con Shinylive el servidor solo entrega archivos estáticos y R corre en el navegador de cada visitante con webR; con un servidor de Shiny (shinyapps.io, Posit Connect, Shiny Server o un contenedor) R corre en el servidor, guarda los datos y los secretos, y el navegador solo dibuja la interfaz y manda los cambios por un WebSocket">
+<defs>
+<marker id="c13d2-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="fl-muted"/></marker>
+</defs>
+<text x="225" y="24" class="t t-xs t-b t-m" text-anchor="middle">SHINYLIVE: SIN SERVIDOR DE R</text>
+<text x="690" y="24" class="t t-xs t-b t-m" text-anchor="middle">CON UN SERVIDOR DE SHINY</text>
+<line x1="460" y1="14" x2="460" y2="456" class="ln ln-d"/>
+
+
+<rect x="20" y="40" width="410" height="120" rx="10" class="d-oper"/>
+<text x="36" y="62" class="t t-b k-oper">Hosting estático (GitHub Pages)</text>
+<text x="36" y="82" class="t t-s">entrega archivos y nada más:</text>
+<rect x="36" y="94" width="120" height="50" rx="6" class="caja"/>
+<text x="96" y="114" class="t t-s t-mono" text-anchor="middle">index.html</text>
+<text x="96" y="131" class="t t-s t-mono" text-anchor="middle">app.json</text>
+<rect x="168" y="94" width="120" height="50" rx="6" class="caja"/>
+<text x="228" y="114" class="t t-s" text-anchor="middle">webR (R en</text>
+<text x="228" y="131" class="t t-s" text-anchor="middle">WebAssembly)</text>
+<rect x="300" y="94" width="116" height="50" rx="6" class="caja"/>
+<text x="358" y="114" class="t t-s" text-anchor="middle">paquetes</text>
+<text x="358" y="131" class="t t-s" text-anchor="middle">compilados</text>
+
+<line x1="225" y1="164" x2="225" y2="214" class="ln" marker-end="url(#c13d2-m)"/>
+<text x="235" y="186" class="t t-s">① se descarga todo, una vez</text>
+<text x="235" y="203" class="t t-s t-m">(decenas de MB; queda en caché)</text>
+
+<rect x="20" y="220" width="410" height="168" rx="10" class="d-inet"/>
+<text x="36" y="242" class="t t-b k-inet">El navegador de cada visitante</text>
+<rect x="36" y="256" width="378" height="56" rx="6" class="c-tra"/>
+<text x="50" y="278" class="t t-s k-tra t-b">② R corre aquí, en la pestaña</text>
+<text x="50" y="296" class="t t-s">ui + server + los datos de la app</text>
+<rect x="36" y="320" width="378" height="54" rx="6" class="caja"/>
+<text x="50" y="342" class="t t-s">③ la interfaz habla con R dentro del mismo navegador</text>
+<text x="50" y="360" class="t t-s t-m">sin red después de cargar</text>
+
+<text x="36" y="414" class="t t-s"><tspan class="t-b k-warm">Costo:</tspan> el hosting, a menudo gratis.</text>
+<text x="36" y="434" class="t t-s"><tspan class="t-b k-warm">Límite:</tspan> todo lo que lleva la app, cualquiera lo ve.</text>
+<text x="36" y="454" class="t t-s"><tspan class="t-b k-warm">No sirve</tspan> para secretos ni bases de datos.</text>
+
+
+<rect x="490" y="40" width="410" height="168" rx="10" class="d-oper"/>
+<text x="506" y="62" class="t t-b k-oper">Servidor con R</text>
+<text x="506" y="80" class="t t-s t-m">shinyapps.io, Posit Connect, Shiny Server o un contenedor</text>
+<rect x="506" y="92" width="378" height="50" rx="6" class="c-tra"/>
+<text x="520" y="113" class="t t-s k-tra t-b">② R corre aquí: un proceso por aplicación</text>
+<text x="520" y="131" class="t t-s">ui + server, que atiende a varias sesiones</text>
+<rect x="506" y="150" width="184" height="46" rx="6" class="caja"/>
+<text x="598" y="169" class="t t-s" text-anchor="middle">base de datos</text>
+<text x="598" y="186" class="t t-s t-m" text-anchor="middle">y archivos grandes</text>
+<rect x="700" y="150" width="184" height="46" rx="6" style="fill:var(--warm-soft);stroke:var(--warm)"/>
+<text x="792" y="169" class="t t-s k-warm" text-anchor="middle">secretos en variables</text>
+<text x="792" y="186" class="t t-s k-warm" text-anchor="middle">de entorno</text>
+
+<line x1="660" y1="214" x2="660" y2="262" class="ln" marker-end="url(#c13d2-m)"/>
+<line x1="720" y1="262" x2="720" y2="214" class="ln" marker-end="url(#c13d2-m)"/>
+<text x="580" y="236" class="t t-s" text-anchor="end">① HTML</text>
+<text x="730" y="236" class="t t-s">③ WebSocket: entradas ↑</text>
+<text x="730" y="253" class="t t-s">salidas ↓ (gráficos, tablas)</text>
+
+<rect x="490" y="268" width="410" height="120" rx="10" class="d-inet"/>
+<text x="506" y="290" class="t t-b k-inet">El navegador de cada visitante</text>
+<rect x="506" y="304" width="378" height="66" rx="6" class="caja"/>
+<text x="520" y="326" class="t t-s">dibuja la interfaz y manda cada cambio</text>
+<text x="520" y="344" class="t t-s">nunca ve el código del servidor ni los datos crudos</text>
+<text x="520" y="362" class="t t-s t-m">si se corta la conexión, la app se pone gris</text>
+
+<text x="506" y="414" class="t t-s"><tspan class="t-b k-warm">Costo:</tspan> horas de servidor o una licencia.</text>
+<text x="506" y="434" class="t t-s"><tspan class="t-b k-warm">Gana:</tspan> secretos, bases de datos, inicio de sesión.</text>
+<text x="506" y="454" class="t t-s"><tspan class="t-b k-warm">Exige</tspan> que alguien lo mantenga encendido.</text>
+</svg></div><figcaption><b>Dónde corre R en cada forma de publicar.</b> A la izquierda, Shinylive: el hosting estático (en azul) entrega una vez la página, webR y los paquetes (①), y R corre dentro de la pestaña del visitante (②, en morado), sin red después de cargar (③). A la derecha, un servidor con R: entrega el HTML (①), corre la aplicación y atiende a varias sesiones (②), guarda la base de datos y los secretos, y habla con cada navegador por un WebSocket (③). Abajo de cada lado, el costo, la ventaja y el límite.</figcaption></figure><div class="prose"><p>Para convertir una aplicación en un sitio estático se usa el paquete de R shinylive:</p><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln">shinylive::export("app12-live", "sitio")</span>
+<span class="ln">httpuv::runStaticServer("sitio")</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><p>La primera línea escribe en <code>sitio/</code> un <code>index.html</code>, la aplicación con sus archivos y lo que hace falta de webR. La segunda sirve esa carpeta en una dirección local, como <code>http://127.0.0.1:</code> y un puerto libre, para probarla; abrir <code>index.html</code> con doble clic no funciona, porque el navegador no deja cargar WebAssembly desde un archivo local. Después, la carpeta se sube a cualquier hosting estático: GitHub Pages, Netlify o el servidor web de la empresa. Quarto también la incrusta dentro de un documento con la extensión <code>quarto-ext/shinylive</code>.</p><p>Las ventajas son grandes: no hay servidor que pagar ni mantener, la aplicación escala sola (cada visitante pone su propio procesador) y sigue funcionando sin conexión una vez cargada. Los límites, también:</p><ul><li><b>Todo es público.</b> El código, los datos y cualquier contraseña que la aplicación lleve viajan al navegador. Cualquiera puede leerlos con las herramientas de desarrollador. Shinylive no sirve para datos privados ni secretos.</li><li><b>Solo paquetes compilados para webR.</b> shiny, bslib, dplyr, ggplot2, leaflet y miles más están; los que dependen de bibliotecas del sistema o de compilar código al instalarse pueden no estar.</li><li><b>No hay conexiones a bases de datos</b> ni a la mayoría de los servicios que exigen sockets; los datos van con la aplicación o se descargan por HTTP.</li><li><b>La primera carga pesa.</b> Decenas de MB y de unos segundos a un par de minutos, según los paquetes; después queda en la caché del navegador.</li></ul></div><div class="practica"><div class="practica-title"><span class="tag">En la terminal</span><h3>Publica las tres tarjetas como sitio estático</h3></div><p>Vas a exportar la aplicación del capítulo 12 con Shinylive y servirla en tu equipo. Necesitas <code>install.packages(c("shinylive", "httpuv"))</code>. La primera exportación descarga los archivos de webR y de Shinylive (una descarga grande) y los guarda para la próxima.</p><ol class="steps"><li><span>En la consola de R, copia la aplicación con sus datos dentro (Shinylive solo empaqueta lo que está en la carpeta) y corrige la ruta de los datos:</span></li></ol><div class="cmds"><div class="cmd-panel" data-so="win mac linux"><div class="cmd-l"><code>setwd("~/bicis")</code><button type="button" class="copiar">Copiar</button></div><div class="cmd-l"><code>dir.create("app12-live")</code><button type="button" class="copiar">Copiar</button></div><div class="cmd-l"><code>file.copy(c("app12/app.R", "app12/R", "datos"), "app12-live", recursive = TRUE)</code><button type="button" class="copiar">Copiar</button></div><div class="cmd-l"><code>writeLines(gsub("../datos/", "datos/", readLines("app12-live/app.R"), fixed = TRUE), "app12-live/app.R")</code><button type="button" class="copiar">Copiar</button></div><div class="cmd-l"><code>shinylive::export("app12-live", "sitio")</code><button type="button" class="copiar">Copiar</button></div><div class="cmd-l"><code>httpuv::runStaticServer("sitio")</code><button type="button" class="copiar">Copiar</button></div></div></div><ol class="steps" start="2" style="counter-reset:st 1"><li><span>Abre en el navegador la dirección que imprime la última línea y espera a que cargue.</span></li><li><span>Abre las herramientas de desarrollador (F12), pestaña Red (<i>Network</i>), recarga y ordena por tamaño.</span></li><li><span>Detén el servidor con Esc en la consola. Opcional: sube la carpeta <code>sitio/</code> a un repositorio de GitHub y actívala en Settings → Pages.</span></li></ol><p><b>Qué observar:</b> la aplicación funciona igual que con <code>runApp()</code>, pero en la pestaña Red no hay un WebSocket hacia un servidor de R: aparecen <code>webR</code> y los paquetes, y entre los archivos, <code>app.json</code>, que trae dentro <code>app.R</code>, los módulos y los 6 MB de <code>viajes.csv</code>. Cualquiera que abra el sitio puede leer todo eso. La primera carga tarda varios segundos más que <code>runApp()</code>; la segunda, con la caché, mucho menos.</p></div></section>
+<section><h2>shinyapps.io y Posit Connect</h2><div class="prose"><p>Cuando la aplicación necesita un servidor (datos privados, una base de datos, inicio de sesión), la forma más corta es dejar que otro lo administre. Posit, la empresa detrás de RStudio y Shiny, ofrece tres productos, todos con el mismo flujo de publicación desde R: el paquete rsconnect.</p></div><figure class="fig fig-flujo" id="13-diagrama-3"><div class="lienzo"><svg viewBox="0 0 920 470" style="min-width:700px;font-variant-ligatures:none" role="img" aria-label="Flujo de una publicación con rsconnect: en tu equipo deployApp lee los archivos y las versiones de los paquetes, arma un paquete y lo sube con tu token al servidor; el servidor instala la misma versión de R y de cada paquete, arranca la aplicación y devuelve la URL; cuando alguien la abre, el servidor crea una sesión y le habla por un WebSocket">
+<defs>
+<marker id="c13d3-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="fl-muted"/></marker>
+</defs>
+
+<rect x="20" y="20" width="150" height="50" rx="8" class="caja"/>
+<text x="95" y="42" class="t t-b" text-anchor="middle">Tu equipo</text>
+<text x="95" y="60" class="t t-s t-m" text-anchor="middle">RStudio o Positron</text>
+<rect x="210" y="20" width="150" height="50" rx="8" class="caja"/>
+<text x="285" y="42" class="t t-b" text-anchor="middle">rsconnect</text>
+<text x="285" y="60" class="t t-s t-m" text-anchor="middle">paquete de R</text>
+<rect x="400" y="20" width="170" height="50" rx="8" class="d-oper"/>
+<text x="485" y="42" class="t t-b k-oper" text-anchor="middle">Servidor</text>
+<text x="485" y="60" class="t t-s t-m" text-anchor="middle">shinyapps.io o Connect</text>
+<rect x="610" y="20" width="130" height="50" rx="8" class="d-inet"/>
+<text x="675" y="42" class="t t-b k-inet" text-anchor="middle">Usuario</text>
+<text x="675" y="60" class="t t-s t-m" text-anchor="middle">un navegador</text>
+
+<line x1="95" y1="70" x2="95" y2="450" class="vida"/>
+<line x1="285" y1="70" x2="285" y2="450" class="vida"/>
+<line x1="485" y1="70" x2="485" y2="450" class="vida"/>
+<line x1="675" y1="70" x2="675" y2="450" class="vida"/>
+
+
+<line x1="95" y1="100" x2="281" y2="100" class="ln" marker-end="url(#c13d3-m)"/>
+<text x="104" y="94" class="t t-s t-mono">① deployApp("app/")</text>
+<rect x="215" y="112" width="140" height="58" rx="6" class="caja"/>
+<text x="285" y="130" class="t t-s" text-anchor="middle">② lista archivos</text>
+<text x="285" y="146" class="t t-s" text-anchor="middle">y la versión de</text>
+<text x="285" y="162" class="t t-s" text-anchor="middle">cada paquete</text>
+<line x1="285" y1="192" x2="481" y2="192" class="ln s-apl" marker-end="url(#c13d3-m)"/>
+<text x="294" y="186" class="t t-s">③ sube el paquete + token (HTTPS)</text>
+<rect x="405" y="204" width="160" height="74" rx="6" class="c-tra"/>
+<text x="485" y="222" class="t t-s k-tra" text-anchor="middle">④ instala la misma</text>
+<text x="485" y="238" class="t t-s k-tra" text-anchor="middle">versión de R y de</text>
+<text x="485" y="254" class="t t-s k-tra" text-anchor="middle">cada paquete</text>
+<text x="485" y="270" class="t t-s t-m" text-anchor="middle">(minutos, la 1.ª vez)</text>
+<line x1="481" y1="300" x2="99" y2="300" class="ln ln-d" marker-end="url(#c13d3-m)"/>
+<text x="290" y="294" class="t t-s" text-anchor="middle">⑤ «Application deployed» + la URL</text>
+
+<line x1="675" y1="340" x2="489" y2="340" class="ln s-apl" marker-end="url(#c13d3-m)"/>
+<text x="582" y="334" class="t t-s" text-anchor="middle">⑥ abre la URL</text>
+<rect x="405" y="350" width="160" height="40" rx="6" class="caja"/>
+<text x="485" y="368" class="t t-s" text-anchor="middle">⑦ arranca R si dormía</text>
+<text x="485" y="384" class="t t-s" text-anchor="middle">y crea una sesión</text>
+<line x1="489" y1="410" x2="671" y2="410" class="ln" marker-end="url(#c13d3-m)"/>
+<line x1="671" y1="426" x2="489" y2="426" class="ln" marker-end="url(#c13d3-m)"/>
+<text x="582" y="404" class="t t-s" text-anchor="middle">⑧ HTML y salidas</text>
+<text x="582" y="444" class="t t-s" text-anchor="middle">entradas (WebSocket)</text>
+
+
+<rect x="770" y="84" width="134" height="230" rx="8" class="caja"/>
+<text x="837" y="108" class="t t-b" text-anchor="middle">Publicar</text>
+<text x="837" y="128" class="t t-s" text-anchor="middle">una vez por</text>
+<text x="837" y="144" class="t t-s" text-anchor="middle">versión</text>
+<text x="837" y="176" class="t t-s" text-anchor="middle">si un paquete</text>
+<text x="837" y="192" class="t t-s" text-anchor="middle">no se instala,</text>
+<text x="837" y="208" class="t t-s" text-anchor="middle">falla en ④ y la</text>
+<text x="837" y="224" class="t t-s" text-anchor="middle">versión anterior</text>
+<text x="837" y="240" class="t t-s" text-anchor="middle">sigue en línea</text>
+<rect x="770" y="326" width="134" height="124" rx="8" class="caja"/>
+<text x="837" y="350" class="t t-b" text-anchor="middle">Usar</text>
+<text x="837" y="370" class="t t-s" text-anchor="middle">cada visita</text>
+<text x="837" y="398" class="t t-s" text-anchor="middle">el arranque en frío</text>
+<text x="837" y="414" class="t t-s" text-anchor="middle">tarda segundos;</text>
+<text x="837" y="430" class="t t-s" text-anchor="middle">cuenta horas activas</text>
+</svg></div><figcaption><b>Flujo de una publicación con rsconnect.</b> Participantes, de izquierda a derecha: tu equipo, el paquete rsconnect, el servidor (shinyapps.io o Connect) y un usuario. ① Llamas a <code>deployApp()</code>; ② rsconnect lista los archivos y la versión exacta de cada paquete instalado; ③ sube todo con tu token por HTTPS; ④ el servidor instala la misma versión de R y de cada paquete; ⑤ responde con la URL. Más tarde, ⑥ un usuario abre la URL, ⑦ el servidor arranca R si estaba dormido y crea una sesión, y ⑧ la aplicación habla con el navegador. A la derecha, las dos fases: publicar (una vez por versión) y usar (cada visita).</figcaption></figure><div class="prose"><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln">rsconnect::setAccountInfo(name = "mi-cuenta", token = "…", secret = "…")</span>
+<span class="ln">rsconnect::deployApp("app12", appName = "tarjetas-ribera")</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><p>El paso ④ explica casi todos los problemas de publicación. El servidor no tiene tus paquetes: los instala de nuevo, de CRAN o de donde rsconnect diga que vinieron. Si usaste un paquete instalado desde un repositorio raro, o una versión que ya no existe, falla ahí. Por eso conviene publicar desde un proyecto con renv (capítulo 06) y probar antes en una sesión limpia.</p><p>Los tres productos, a noviembre de 2026, según sus páginas oficiales:</p><div class="tbl"><table><thead><tr><th>Producto</th><th>Qué es</th><th>Planes y precio de referencia</th></tr></thead><tbody><tr><td><b>shinyapps.io</b></td><td>Servicio en la nube de Posit solo para Shiny</td><td>Free US$ 0 (5 aplicaciones, 25 horas activas al mes); Starter US$ 13 al mes (100 horas); Basic US$ 49 (500 horas); Standard US$ 119 (2.000 horas, con autenticación de usuarios); Professional US$ 349 (10.000 horas y dominio propio)</td></tr><tr><td><b>Posit Connect Cloud</b></td><td>Servicio en la nube que publica desde un repositorio de GitHub; sirve Shiny, Quarto, Streamlit y otros</td><td>Free US$ 0 (contenido público); Basic US$ 19 al mes; Enhanced US$ 59 (compartir en privado); Advanced desde US$ 249 al mes con cinco puestos; Enterprise, por cotización</td></tr><tr><td><b>Posit Connect</b></td><td>El producto que se instala en tus servidores (o en tu nube)</td><td>Licencia anual por cotización, con niveles según usuarios e instancias</td></tr></tbody></table></div><p>Una <b>hora activa</b> (<i>active hour</i>) en shinyapps.io es una hora en que la aplicación tuvo al menos una sesión abierta; si nadie la usa, se duerme a los pocos minutos y deja de contar. El plan gratuito sirve para probar y para un público pequeño; el inicio de sesión de los usuarios empieza en Standard. Posit Connect, instalado en casa, agrega lo que pide una organización: inicio de sesión con la cuenta de la empresa, permisos por grupo, reportes programados y los datos dentro de la red propia. Los precios cambian: revisa las páginas oficiales antes de decidir.</p></div><div class="lab" id="13-lab-1"><div class="lab-title"><span class="tag">Laboratorio</span><h3>Elige dónde publicar: responde cinco preguntas y mira la opción recomendada y su costo</h3></div><p class="hint">Responde sobre los datos, quién usa la aplicación, cuántas horas al mes, si hay cálculos pesados o bases de datos, y si tu equipo administra servidores. Mira qué opción queda, cuánto cuesta y por qué se descartan las demás. Prueba a cambiar una sola respuesta: un secreto o una base de datos dejan fuera a Shinylive; el inicio de sesión sube el plan de shinyapps.io.</p><style>
+[id="13-lab-1"] .c13l1-q{display:grid;gap:6px;padding:10px 0;border-bottom:1px solid var(--line)}
+[id="13-lab-1"] .c13l1-q:last-of-type{border-bottom:0}
+[id="13-lab-1"] .c13l1-rot{font:700 .72rem var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+[id="13-lab-1"] .c13l1-p{font:600 .95rem var(--f-display);color:var(--ink)}
+[id="13-lab-1"] .c13l1-rec{border:2px solid var(--accent);border-radius:10px;padding:12px 14px;display:grid;gap:4px;background:var(--accent-soft)}
+[id="13-lab-1"] .c13l1-rec b.n{font:700 1.1rem var(--f-display);color:var(--accent)}
+[id="13-lab-1"] .c13l1-rec .costo{font:600 .95rem var(--f-mono);color:var(--ink)}
+[id="13-lab-1"] table{border-collapse:collapse;width:100%;font-size:.85rem}
+[id="13-lab-1"] th,[id="13-lab-1"] td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+[id="13-lab-1"] th{font:700 .72rem var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+[id="13-lab-1"] td.no{color:var(--muted);text-decoration:line-through}
+[id="13-lab-1"] td .por{display:block;color:var(--warm);font-size:.78rem;text-decoration:none}
+[id="13-lab-1"] tr.si td:first-child{font-weight:700;color:var(--accent)}
+[id="13-lab-1"] .c13l1-wrap{overflow-x:auto}
+</style>
+<div id="c13l1-preg"></div>
+<div class="c13l1-rec" id="c13l1-rec" aria-live="polite"></div>
+<div class="readout texto" id="c13l1-why" aria-live="polite"></div>
+<div class="c13l1-wrap"><table id="c13l1-tab" aria-label="Todas las opciones de publicación, cuáles quedan descartadas y por qué">
+<thead><tr><th>Opción</th><th>Costo de referencia</th><th>¿Sirve?</th></tr></thead><tbody></tbody></table></div>
+<p class="hint">Precios a noviembre de 2026, de las páginas oficiales de shinyapps.io y de Posit (por mes, en dólares; los planes anuales salen un poco más baratos). Posit Connect, el producto que se instala en tus servidores, se cotiza. Un servidor propio cuesta lo que cobre tu proveedor de nube o tu centro de datos.</p></div></section>
+<section><h2>Shiny Server y Docker</h2><div class="prose"><p>La tercera vía es tener el servidor uno mismo. <b>Shiny Server</b> es el programa de código abierto de Posit que sirve aplicaciones Shiny en un servidor Linux: escucha en el puerto 3838 y publica cada carpeta que encuentre en <code>/srv/shiny-server/</code> como una aplicación, con su URL. Se configura en <code>/etc/shiny-server/shiny-server.conf</code>. Es gratuito, pero no trae inicio de sesión ni HTTPS: para eso se pone delante un <b>proxy inverso</b> (<i>reverse proxy</i>), como Nginx o Caddy, que recibe las conexiones, pone el certificado y, si hace falta, pide la sesión.</p><p>Hoy lo más común es empaquetar la aplicación en un <b>contenedor</b> (<i>container</i>): una imagen que trae el sistema operativo mínimo, R, los paquetes exactos y la aplicación, y que corre igual en el portátil, en el servidor de la empresa o en un servicio de contenedores de cualquier nube. El proyecto Rocker publica imágenes listas, y <code>rocker/shiny</code> ya trae R y Shiny Server:</p><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln">FROM rocker/shiny:4.6.2</span>
+<span class="ln">RUN install2.r --error renv</span>
+<span class="ln">WORKDIR /srv/shiny-server/tablero</span>
+<span class="ln">COPY renv.lock renv.lock</span>
+<span class="ln">RUN R -e "renv::restore()"</span>
+<span class="ln">COPY . .</span>
+<span class="ln">EXPOSE 3838</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><p>El <code>renv.lock</code> del capítulo 06 hace que la imagen tenga exactamente las versiones con que se probó la aplicación, y como se copia antes que el código, Docker reutiliza la capa de los paquetes mientras el <code>renv.lock</code> no cambie: reconstruir después de tocar un módulo tarda segundos. Con <code>docker build -t tablero .</code> y <code>docker run -p 3838:3838 tablero</code>, la aplicación queda en <code>http://localhost:3838/tablero/</code>. Cómo se construyen, se versionan y se despliegan los contenedores, a fondo, está en el curso de <a href="https://aaramirez.github.io/devops/temario.html" target="_blank" rel="noopener">DevOps</a>.</p><p>Una advertencia de escala: un proceso de R atiende a muchas sesiones, pero de a una cosa a la vez (capítulo 12). Shiny Server de código abierto corre un proceso por aplicación; si cien personas la usan a la vez, se reparten ese proceso. Posit Connect y las plataformas de contenedores pueden levantar varios procesos y repartir las sesiones entre ellos.</p></div></section>
+<section><h2>Usuarios, acceso y secretos</h2><div class="analogia"><b>Imagínalo así</b><p>En un edificio de oficinas, el portero de la entrada revisa tu credencial y te deja pasar al piso que te corresponde. Dentro de la oficina nadie vuelve a pedirte la cédula: saben quién eres porque el portero ya lo verificó. Y la llave de la caja fuerte no está pegada en la puerta: la guarda alguien, y se entrega solo a quien la necesita.</p></div><div class="prose"><p>Una aplicación publicada para un grupo de personas necesita responder tres preguntas: <b>quién eres</b> (autenticación), <b>qué puedes ver</b> (autorización) y <b>dónde están las contraseñas que usa la aplicación</b> (secretos). Lo importante es que las dos primeras casi nunca se programan dentro de la aplicación.</p></div><figure class="fig fig-arquitectura" id="13-diagrama-4"><div class="lienzo"><svg viewBox="0 0 920 380" style="min-width:700px;font-variant-ligatures:none" role="img" aria-label="Usuarios, acceso y secretos: el usuario inicia sesión con el proveedor de identidad de la organización; la plataforma o un proxy deja pasar solo a quien tiene permiso y le dice a Shiny quién es en session$user y session$groups; la aplicación lee la contraseña de la base de datos con Sys.getenv desde una variable de entorno que configura la plataforma; la contraseña escrita en app.R y subida al repositorio es el camino que no se toma">
+<defs>
+<marker id="c13d4-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="fl-muted"/></marker>
+</defs>
+<rect x="16" y="60" width="130" height="70" rx="8" class="d-inet"/>
+<text x="81" y="88" class="t t-b k-inet" text-anchor="middle">Usuario</text>
+<text x="81" y="108" class="t t-s" text-anchor="middle">navegador</text>
+
+<rect x="196" y="40" width="190" height="110" rx="8" class="d-oper"/>
+<text x="291" y="64" class="t t-b k-oper" text-anchor="middle">Puerta de entrada</text>
+<text x="291" y="84" class="t t-s" text-anchor="middle">la plataforma o un proxy</text>
+<text x="291" y="104" class="t t-s" text-anchor="middle">① ¿quién eres? (SSO)</text>
+<text x="291" y="122" class="t t-s" text-anchor="middle">② ¿tienes permiso?</text>
+<text x="291" y="140" class="t t-s t-m" text-anchor="middle">si no, ni llega a R</text>
+<line x1="146" y1="95" x2="192" y2="95" class="ln" marker-end="url(#c13d4-m)"/>
+
+<rect x="236" y="196" width="110" height="52" rx="8" class="caja"/>
+<text x="291" y="218" class="t t-s" text-anchor="middle">Proveedor de</text>
+<text x="291" y="235" class="t t-s" text-anchor="middle">identidad</text>
+<line x1="280" y1="154" x2="280" y2="192" class="ln" marker-end="url(#c13d4-m)"/>
+<line x1="302" y1="192" x2="302" y2="154" class="ln" marker-end="url(#c13d4-m)"/>
+<text x="250" y="270" class="t t-s t-m" text-anchor="middle">SAML u OpenID Connect</text>
+
+<rect x="436" y="40" width="250" height="150" rx="8" class="c-tra"/>
+<text x="561" y="64" class="t t-b k-tra" text-anchor="middle">La aplicación Shiny</text>
+<text x="452" y="88" class="t t-s t-mono">session$user</text>
+<text x="452" y="106" class="t t-s t-m">  "analista@ejemplo.com"</text>
+<text x="452" y="126" class="t t-s t-mono">session$groups</text>
+<text x="452" y="144" class="t t-s t-m">  muestra u oculta pestañas</text>
+<text x="452" y="170" class="t t-s t-mono">Sys.getenv("BD_CLAVE")</text>
+<line x1="390" y1="95" x2="432" y2="95" class="ln" marker-end="url(#c13d4-m)"/>
+<text x="411" y="85" class="t t-s" text-anchor="middle">③</text>
+
+<rect x="436" y="230" width="250" height="64" rx="8" style="fill:var(--warm-soft);stroke:var(--warm)"/>
+<text x="561" y="254" class="t t-b k-warm" text-anchor="middle">Variables de entorno</text>
+<text x="561" y="274" class="t t-s" text-anchor="middle">las pone la plataforma, fuera del código</text>
+<line x1="561" y1="226" x2="561" y2="194" class="ln" marker-end="url(#c13d4-m)"/>
+<text x="572" y="214" class="t t-s">④</text>
+
+<rect x="736" y="80" width="168" height="70" rx="8" class="d-sis"/>
+<text x="820" y="108" class="t t-b k-sis" text-anchor="middle">Base de datos</text>
+<text x="820" y="128" class="t t-s" text-anchor="middle">usuario de solo lectura</text>
+<line x1="690" y1="115" x2="732" y2="115" class="ln" marker-end="url(#c13d4-m)"/>
+<text x="711" y="105" class="t t-s" text-anchor="middle">⑤</text>
+
+<rect x="560" y="318" width="344" height="50" rx="8" class="caja" style="stroke-dasharray:5 4"/>
+<text x="732" y="338" class="t t-s" text-anchor="middle"><tspan class="k-warm t-b">✗</tspan> clave &lt;- "S3cr3t0" en app.R → git push</text>
+<text x="732" y="356" class="t t-s t-m" text-anchor="middle">queda en el historial para siempre: hay que cambiarla</text>
+<text x="20" y="330" class="t t-s t-m">① y ② no los programa la app: los pone</text>
+<text x="20" y="348" class="t t-s t-m">Posit Connect, shinyapps.io (plan con autenticación)</text>
+<text x="20" y="366" class="t t-s t-m">o un proxy delante de Shiny Server o del contenedor.</text>
+</svg></div><figcaption><b>Usuarios, acceso y secretos.</b> El usuario llega a la puerta de entrada (gris): la plataforma o un proxy le pide iniciar sesión con el proveedor de identidad de la organización (①, por SAML u OpenID Connect) y decide si tiene permiso (②). Solo entonces la petición llega a la aplicación (③, en morado), que sabe quién es por <code>session$user</code> y <code>session$groups</code>. La aplicación lee la contraseña de la base de datos con <code>Sys.getenv()</code> (④) de una variable de entorno que configuró la plataforma, y se conecta con un usuario de solo lectura (⑤). Abajo a la derecha, con borde punteado, el camino que no se toma: la clave escrita en <code>app.R</code> y subida al repositorio.</figcaption></figure><div class="prose"><ul><li><b>Autenticación y autorización.</b> Posit Connect se conecta al directorio de la empresa con <b>SAML</b> (<i>Security Assertion Markup Language</i>) u <b>OpenID Connect</b>, los dos estándares con que una aplicación le pregunta a un proveedor de identidad quién es el usuario; shinyapps.io, desde el plan Standard, pide usuario y contraseña a una lista de invitados. Con Shiny Server o un contenedor, el inicio de sesión lo hace el proxy de delante. En todos los casos, la aplicación recibe al usuario ya verificado en <code>session$user</code> (y, en Connect, sus grupos en <code>session$groups</code>) y puede mostrar u ocultar pestañas según eso. Programar un formulario propio de usuario y contraseña dentro de Shiny es reinventar algo delicado.</li><li><b>Secretos.</b> Una contraseña de base de datos, una clave de API o un token <b>nunca</b> se escriben en el código. Se leen con <code>Sys.getenv("BD_CLAVE")</code>. En tu equipo, el valor vive en un archivo <code>.Renviron</code> (una línea <code>BD_CLAVE=...</code>), que R lee al arrancar y que se agrega a <code>.gitignore</code> para que nunca llegue al repositorio. En Posit Connect y Connect Cloud, las variables se cargan en el panel de configuración de la aplicación y quedan cifradas; en shinyapps.io, el <code>.Renviron</code> viaja con la publicación pero no con git; en un contenedor, se pasan al arrancar o desde el gestor de secretos de la plataforma.</li><li><b>El mínimo privilegio.</b> El usuario de base de datos que usa la aplicación debe poder leer las tablas que necesita y nada más. Si alguien encuentra un error en la aplicación, el daño queda acotado.</li></ul></div><div class="caso"><b>Un caso real</b><p>En 2016, unos atacantes entraron a un repositorio privado de GitHub que usaban ingenieros de Uber y encontraron dentro credenciales de acceso a su almacenamiento en la nube. Con ellas descargaron datos de unos 57 millones de usuarios y conductores. La Comisión Federal de Comercio de Estados Unidos documentó el caso en 2017 y 2018. Un repositorio privado no es una caja fuerte: lo leen todos los que tienen acceso, sus copias y cualquiera que robe una cuenta. Por eso los secretos van en variables de entorno, y si uno llega a un repositorio, aunque se borre después, se considera expuesto y se cambia: el historial de git lo guarda para siempre.</p></div></section>
+<section><h2>Prompts para generar una aplicación Shiny de producción</h2><div class="prose"><p>Un asistente de IA escribe en segundos una aplicación Shiny que funciona en el portátil. Lo que suele faltarle es todo lo de este capítulo y el anterior: módulos, pruebas, validación, secretos fuera del código y una forma de publicarla. La diferencia está en el pedido. Estas dos plantillas piden una aplicación de producción; cambia lo que está entre corchetes.</p><p>La primera es para generar la aplicación:</p><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln">Actúa como desarrollador senior de R y Shiny. Escribe una aplicación para [qué hace y</span>
+<span class="ln">para quién], con los datos de [archivo o tabla, columnas y tipos].</span>
+<span class="ln"></span>
+<span class="ln">Estructura y código:</span>
+<span class="ln">- Carpeta con app.R y R/: un módulo por pieza de la interfaz ([filtros, mapa, tabla…]),</span>
+<span class="ln">  con NS() en cada id y moduleServer(); los cálculos en funciones puras en R/calculos.R,</span>
+<span class="ln">  sin dependencias de Shiny.</span>
+<span class="ln">- Los datos bajan a los módulos como argumentos (reactivos sin paréntesis) y suben como</span>
+<span class="ln">  valor de retorno; nada de variables globales con &lt;&lt;-.</span>
+<span class="ln">- bslib para el diseño (page_sidebar, card). Paquetes: solo [lista]; nada más.</span>
+<span class="ln"></span>
+<span class="ln">Robustez:</span>
+<span class="ln">- req() para entradas que pueden faltar; validate(need()) con mensajes en español para</span>
+<span class="ln">  el usuario; si se sube un archivo, una función que valide columnas, tipos y rangos.</span>
+<span class="ln">- bindCache() solo donde un cálculo tarde más de [1 s], con todas las entradas que</span>
+<span class="ln">  cambian el resultado en la clave.</span>
+<span class="ln"></span>
+<span class="ln">Seguridad:</span>
+<span class="ln">- Ninguna contraseña, token ni URL interna en el código: Sys.getenv() con el nombre de</span>
+<span class="ln">  cada variable, y un archivo .Renviron.ejemplo con los nombres y valores ficticios.</span>
+<span class="ln">- Conexión a la base con un usuario de solo lectura; consultas con parámetros, nunca</span>
+<span class="ln">  pegando texto del usuario en el SQL.</span>
+<span class="ln"></span>
+<span class="ln">Pruebas:</span>
+<span class="ln">- tests/testthat con pruebas de cada función de R/calculos.R, una prueba con</span>
+<span class="ln">  testServer() por módulo (entradas fijadas con session$setInputs y salidas o valores</span>
+<span class="ln">  devueltos comprobados) y una prueba de punta a punta con shinytest2.</span>
+<span class="ln"></span>
+<span class="ln">Entrega: el árbol de archivos, cada archivo completo y los comandos para correr la</span>
+<span class="ln">aplicación y las pruebas. Señala lo que supusiste y no te dije.</span></code></pre><button type="button" class="ver-todo" aria-expanded="false">Ver las 30 líneas</button><button type="button" class="copiar copiar-todo">Copiar</button></div><p>La segunda es para preparar la publicación, una vez que la aplicación existe:</p><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln">Tengo una aplicación Shiny en la carpeta [ruta] con renv.lock. Debe publicarse en</span>
+<span class="ln">[Posit Connect | shinyapps.io | un contenedor en [plataforma] | Shinylive].</span>
+<span class="ln">Usuarios: [quiénes, cuántos a la vez]. Datos: [públicos | privados en [base]].</span>
+<span class="ln"></span>
+<span class="ln">Prepara:</span>
+<span class="ln">1. La lista de variables de entorno que necesita y dónde se configura cada una en</span>
+<span class="ln">   esa plataforma; confirma que ninguna está en el código ni en git (.gitignore).</span>
+<span class="ln">2. [Si es contenedor] un Dockerfile con rocker/shiny en una versión fija, renv::restore()</span>
+<span class="ln">   antes de copiar el código, usuario sin privilegios y puerto 3838; y el comando para</span>
+<span class="ln">   construir y probar la imagen en local.</span>
+<span class="ln">3. [Si es Shinylive] confirma que todos los paquetes existen en webR y que no hay</span>
+<span class="ln">   secretos ni datos privados; el comando shinylive::export y cómo subirlo a GitHub Pages.</span>
+<span class="ln">4. Cómo se restringe el acceso a [grupo o lista] y cómo leer session$user en la app.</span>
+<span class="ln">5. Un flujo de GitHub Actions que corra las pruebas en cada cambio y publique solo si</span>
+<span class="ln">   pasan.</span>
+<span class="ln">6. Una lista de comprobación previa: sesión limpia, pruebas en verde, límites de</span>
+<span class="ln">   memoria, registro de errores, cómo volver a la versión anterior.</span>
+<span class="ln">No inventes opciones de configuración: si no estás seguro de una, dilo.</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><p>Dos advertencias. Lo que el asistente entrega se revisa como el código de un colega nuevo: se corren las pruebas, se busca a mano cualquier cosa que parezca una contraseña y se comprueba que los paquetes existen. Y nunca se pega en el chat el contenido real del <code>.Renviron</code> ni datos de clientes: el asistente no necesita los valores, solo los nombres.</p></div></section>
+<section><h2>La idea clave</h2><div class="prose"><p>Una aplicación está lista para otros cuando se puede cambiar sin miedo y vive en un lugar adecuado a su uso. Lo primero lo dan las pruebas: muchas de funciones puras, varias con <code>testServer()</code> y pocas de punta a punta con shinytest2. Lo segundo es una decisión con criterios claros: Shinylive si todo es público y liviano; shinyapps.io o Connect Cloud si hace falta un servidor y no quieres administrarlo; Posit Connect o un contenedor si la organización necesita su propio control. En cualquier caso, el inicio de sesión lo pone la plataforma y los secretos viven en variables de entorno, nunca en el código.</p></div></section>
+<section><h2>Pruébate</h2><div class="quiz"><h3>Pruébate</h3><details><summary>¿Qué hace <code>session$setInputs(estacion = "E10")</code> dentro de <code>testServer()</code>?</summary><p>Fija el valor de la entrada como si un usuario hubiera elegido E10, sin navegador; después se leen los reactivos, las salidas y lo que devuelve el módulo.</p></details><details><summary>En una prueba de shinytest2, ¿por qué se escribe <code>lomas-estacion</code> y no <code>estacion</code>?</summary><p>Porque shinytest2 habla con la página, donde los ids llevan el prefijo del módulo; <code>testServer()</code>, en cambio, corre dentro del módulo y usa los nombres sin prefijo.</p></details><details><summary>¿Por qué conviene que la mayoría de las pruebas sean de funciones puras?</summary><p>Porque corren en milisegundos, no dependen de Shiny ni del navegador y no se rompen cuando cambia la interfaz.</p></details><details><summary>Una aplicación consulta la base de datos de clientes con una contraseña. ¿Se puede publicar con Shinylive?</summary><p>No. Con Shinylive el código y los datos viajan al navegador de cada visitante, que puede leerlos; además, webR no se conecta a la mayoría de las bases de datos.</p></details><details><summary>¿Qué es una hora activa en shinyapps.io?</summary><p>Una hora en que la aplicación tuvo al menos una sesión abierta. Los planes se distinguen por cuántas horas activas al mes incluyen.</p></details><details><summary>¿Por qué en el Dockerfile se copia <code>renv.lock</code> y se restauran los paquetes antes de copiar el código?</summary><p>Porque Docker reutiliza las capas que no cambiaron: mientras <code>renv.lock</code> sea el mismo, la capa con los paquetes no se reconstruye y cambiar el código solo rehace la última capa.</p></details></div></section>
+<section><h2>Para investigar</h2><div class="investiga"><h3>Para investigar</h3><p class="hint">Estas preguntas no se responden en el capítulo: búscalas por tu cuenta.</p><ol><li>¿Qué es un WebSocket y en qué se diferencia de una petición HTTP normal?<small>Pista: busca «WebSocket protocol <a href="https://www.rfc-editor.org/rfc/rfc6455" target="_blank" rel="noopener">RFC 6455</a>».</small></li><li>¿Por qué los navegadores no dejan cargar WebAssembly desde un archivo abierto con doble clic?<small>Pista: busca «file:// CORS WebAssembly».</small></li><li>¿En qué se diferencian SAML y OpenID Connect, y por qué las empresas usan uno u otro?</li><li>¿Cómo funcionan los escáneres de secretos que revisan los repositorios, como el de GitHub, y qué hacen cuando encuentran una clave?<small>Pista: busca «GitHub secret scanning push protection».</small></li><li>¿Qué es la afinidad de sesión (<i>sticky sessions</i>) en un balanceador de carga y por qué la necesita Shiny cuando hay varios procesos?</li></ol></div></section>
+<section><h2>Para saber más</h2><div class="vids"><span>Para saber más</span><a class="vid" href="https://mastering-shiny.org/scaling-testing.html" target="_blank" rel="noopener">Mastering Shiny: pruebas <small>el capítulo sobre testServer y la pirámide de pruebas, en inglés</small></a><a class="vid" href="https://rstudio.github.io/shinytest2/" target="_blank" rel="noopener">shinytest2 <small>la documentación oficial, con la grabadora de pruebas, en inglés</small></a><a class="vid" href="https://posit-dev.github.io/r-shinylive/" target="_blank" rel="noopener">Shinylive para R <small>el paquete que exporta aplicaciones estáticas, en inglés</small></a><a class="vid" href="https://docs.posit.co/shinyapps.io/guide/" target="_blank" rel="noopener">shinyapps.io: guía de usuario <small>publicación, planes y autenticación, en inglés</small></a></div></section>
+<label class="got"><input type="checkbox" id="got"> Lo tengo claro</label>
+<nav class="pager" id="pager" aria-label="Capítulo anterior y siguiente"></nav>
+</main>
+</div>
+<footer><span>Curso abierto de aaramirez.github.io.</span><span>Sitio publicado: <a href="https://github.com/aaramirez/programacion-r" target="_blank" rel="noopener">github.com/aaramirez/programacion-r</a></span></footer>
+</div>
+<script src="assets/lab.js"></script>
+<script>
+(function(){
+  const {$}=window.Lab;
+  const raiz=document.querySelector('[id="13-lab-2"]');
+  /* ---- Componente webR común del curso «R y aplicaciones interactivas» (copiar tal cual) ----
+     webR 0.6.0 (R 4.6.0 compilado a WebAssembly). Se descarga solo al pulsar «Cargar R» y hay
+     UNA sola instancia por página (window.rWebR), compartida por todos los labs.
+     R.cargar(['dplyr'], aviso)  -> promesa con la instancia; instala los paquetes que falten
+     R.archivos(w, {'viajes.csv': texto})  -> escribe archivos en la carpeta de trabajo de R
+     R.correr(w, 'NN-lab-K', codigo, {ancho, alto})  -> {salida:[{tipo,texto}], imagenes, error}
+       tipo: 'codigo' (eco de cada expresión, con '> ' o '+ ' como en la consola), 'stdout' o 'stderr'
+       (errores «Error: …», avisos «Aviso: …» y mensajes). Sin {ancho, alto} no se capturan gráficos.
+       R se detiene en la primera expresión que falla, como source().
+     Cada lab corre en su propio entorno (sus variables no chocan con las de otro lab).
+     Las ejecuciones se ponen en fila: nunca corren dos a la vez. */
+  const R=window.rWebR||(window.rWebR=(function(){
+    const VER='0.6.0',BASE='https://webr.r-wasm.org/v'+VER+'/';
+    let base=null,cola=Promise.resolve(),n=0;const instalados={};
+    const enFila=f=>{const p=cola.then(f,f);cola=p.catch(()=>{});return p;};
+    const AYUDA=[
+      '.labs <- new.env()',
+      '.correr_lab <- function(id, archivo) {',
+      '  env <- .labs[[id]]',
+      '  if (is.null(env)) { env <- new.env(parent = globalenv()); assign(id, env, envir = .labs) }',
+      '  exprs <- tryCatch(parse(archivo, keep.source = TRUE, encoding = "UTF-8"), error = function(e) {',
+      '    cat("Error de sintaxis:", sub("^[^:]*:", "", conditionMessage(e)), "\\n", file = stderr()); NULL })',
+      '  if (is.null(exprs)) return(invisible(FALSE))',
+      '  ok <- TRUE',
+      '  withCallingHandlers(',
+      '    tryCatch(for (i in seq_along(exprs)) {',
+      '      l <- as.character(attr(exprs, "srcref")[[i]])',
+      '      cat(paste0(c("\\001", rep("\\002", length(l) - 1)), l), sep = "\\n")',
+      '      r <- withVisible(eval(exprs[[i]], env)); if (r$visible) print(r$value) },',
+      '      error = function(e) { ok <<- FALSE; cat("Error:", conditionMessage(e), "\\n", file = stderr()) }),',
+      '    warning = function(w) { cat("Aviso:", conditionMessage(w), "\\n", file = stderr()); invokeRestart("muffleWarning") },',
+      '    message = function(m) { cat(conditionMessage(m), file = stderr()); invokeRestart("muffleMessage") })',
+      '  invisible(ok)',
+      '}',
+      'options(width = 70)'].join('\n');
+    return {VER,
+      listo:()=>!!base,
+      /* paquetes: [] o ['dplyr','ggplot2']; aviso(texto) recibe el estado */
+      cargar(paquetes,aviso){
+        if(!base){aviso&&aviso('Descargando R (webR '+VER+')…');
+          base=(async()=>{const {WebR}=await import(BASE+'webr.mjs');
+            const w=new WebR({baseUrl:BASE});await w.init();await w.evalRVoid(AYUDA);return w;})();
+          base.catch(()=>{base=null;});}
+        return base.then(w=>enFila(async()=>{
+          const faltan=(paquetes||[]).filter(p=>!instalados[p]);
+          if(faltan.length){aviso&&aviso('Instalando '+faltan.join(' y ')+'…');
+            await w.installPackages(faltan,{quiet:true});faltan.forEach(p=>instalados[p]=1);}
+          return w;}));
+      },
+      /* archivos: {'viajes.csv': 'texto…'}; quedan en la carpeta de trabajo (/home/web_user) */
+      async archivos(w,archivos){for(const k in archivos)
+        await w.FS.writeFile('/home/web_user/'+k,new TextEncoder().encode(archivos[k]));},
+      /* graf: {ancho, alto} en píxeles CSS para capturar gráficos; sin graf no se capturan */
+      correr(w,lab,codigo,graf){return enFila(async()=>{
+        const f='/tmp/lab'+(++n)+'.R';
+        await w.FS.writeFile(f,new TextEncoder().encode(codigo));
+        const sh=await new w.Shelter();
+        try{
+          const r=await sh.captureR('.correr_lab('+JSON.stringify(lab)+', '+JSON.stringify(f)+')',{
+            withAutoprint:false,captureStreams:true,captureConditions:false,
+            captureGraphics:graf?{width:graf.ancho,height:graf.alto,bg:'white'}:false});
+          const salida=r.output.filter(o=>o.type==='stdout'||o.type==='stderr').map(o=>{const t=String(o.data);
+            return t[0]==='\x01'?{tipo:'codigo',texto:'> '+t.slice(1)}:t[0]==='\x02'?{tipo:'codigo',texto:'+ '+t.slice(1)}:{tipo:o.type,texto:t};});
+          const error=salida.some(o=>o.tipo==='stderr'&&/^Error/.test(o.texto));
+          return {salida,imagenes:r.images||[],error};
+        }catch(e){return {salida:[{tipo:'stderr',texto:'Error: '+(e.message||e)}],imagenes:[],error:true};}
+        finally{sh.purge();}
+      });}
+    };
+  })());
+  /* Dibuja las imágenes que devuelve R.correr dentro de un elemento (un canvas por gráfico) */
+  function pintarGraficos(el,imgs){
+    el.innerHTML='';
+    (imgs||[]).forEach(im=>{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;
+      c.style.cssText='width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:6px;background:#fff;margin-top:6px';
+      c.getContext('2d').drawImage(im,0,0);c.setAttribute('role','img');c.setAttribute('aria-label','Gráfico producido por R');el.appendChild(c);});
+  }
+  /* ---- fin del componente ---- */
+  const GUARDADO={"rojo": {"salida": [{"tipo": "codigo", "texto": "> library(shiny)"}, {"tipo": "codigo", "texto": "> library(testthat)"}, {"tipo": "codigo", "texto": "> totales <- data.frame(estacion_id = c(\"E06\", \"E10\"),"}, {"tipo": "codigo", "texto": "+                       salidas = c(3190, 2894), llegadas = c(3290, 1495))"}, {"tipo": "codigo", "texto": "> balanceServer <- function(id, totales) {"}, {"tipo": "codigo", "texto": "+   moduleServer(id, function(input, output, session) {"}, {"tipo": "codigo", "texto": "+     balance <- reactive({"}, {"tipo": "codigo", "texto": "+       req(input$estacion)"}, {"tipo": "codigo", "texto": "+       f <- totales[totales$estacion_id == input$estacion, ]"}, {"tipo": "codigo", "texto": "+       f$salidas - f$llegadas      # el balance, ¿o era al revés?"}, {"tipo": "codigo", "texto": "+     })"}, {"tipo": "codigo", "texto": "+     output$texto <- renderText(paste(input$estacion, \"gana\", balance(), \"bicis\"))"}, {"tipo": "codigo", "texto": "+     balance"}, {"tipo": "codigo", "texto": "+   })"}, {"tipo": "codigo", "texto": "+ }"}, {"tipo": "codigo", "texto": "> testServer(balanceServer, args = list(totales = totales), {"}, {"tipo": "codigo", "texto": "+   session$setInputs(estacion = \"E10\")"}, {"tipo": "codigo", "texto": "+   expect_equal(balance(), -1399)        # Las Lomas pierde bicis"}, {"tipo": "codigo", "texto": "+   session$setInputs(estacion = \"E06\")"}, {"tipo": "codigo", "texto": "+   expect_equal(balance(), 100)"}, {"tipo": "codigo", "texto": "+   expect_equal(output$texto, \"E06 gana 100 bicis\")"}, {"tipo": "codigo", "texto": "+   expect_equal(session$returned(), 100) # lo que devuelve el módulo"}, {"tipo": "codigo", "texto": "+ })"}, {"tipo": "stderr", "texto": "Error: Expected `balance()` to equal `-1399`."}, {"tipo": "stderr", "texto": "Differences:"}, {"tipo": "stderr", "texto": "1/1 mismatches"}, {"tipo": "stderr", "texto": "[1] 1399 - -1399 == 2798 "}], "error": true}, "verde": {"salida": [{"tipo": "codigo", "texto": "> library(shiny)"}, {"tipo": "codigo", "texto": "> library(testthat)"}, {"tipo": "codigo", "texto": "> totales <- data.frame(estacion_id = c(\"E06\", \"E10\"),"}, {"tipo": "codigo", "texto": "+                       salidas = c(3190, 2894), llegadas = c(3290, 1495))"}, {"tipo": "codigo", "texto": "> balanceServer <- function(id, totales) {"}, {"tipo": "codigo", "texto": "+   moduleServer(id, function(input, output, session) {"}, {"tipo": "codigo", "texto": "+     balance <- reactive({"}, {"tipo": "codigo", "texto": "+       req(input$estacion)"}, {"tipo": "codigo", "texto": "+       f <- totales[totales$estacion_id == input$estacion, ]"}, {"tipo": "codigo", "texto": "+       f$llegadas - f$salidas      # balance = llegadas - salidas"}, {"tipo": "codigo", "texto": "+     })"}, {"tipo": "codigo", "texto": "+     output$texto <- renderText(paste(input$estacion, \"gana\", balance(), \"bicis\"))"}, {"tipo": "codigo", "texto": "+     balance"}, {"tipo": "codigo", "texto": "+   })"}, {"tipo": "codigo", "texto": "+ }"}, {"tipo": "codigo", "texto": "> testServer(balanceServer, args = list(totales = totales), {"}, {"tipo": "codigo", "texto": "+   session$setInputs(estacion = \"E10\")"}, {"tipo": "codigo", "texto": "+   expect_equal(balance(), -1399)        # Las Lomas pierde bicis"}, {"tipo": "codigo", "texto": "+   session$setInputs(estacion = \"E06\")"}, {"tipo": "codigo", "texto": "+   expect_equal(balance(), 100)"}, {"tipo": "codigo", "texto": "+   expect_equal(output$texto, \"E06 gana 100 bicis\")"}, {"tipo": "codigo", "texto": "+   expect_equal(session$returned(), 100) # lo que devuelve el módulo"}, {"tipo": "codigo", "texto": "+ })"}, {"tipo": "codigo", "texto": "> cat(\"VERDE: las 4 comprobaciones pasaron\\n\")"}, {"tipo": "stdout", "texto": "VERDE: las 4 comprobaciones pasaron"}]}, "req": {"salida": [{"tipo": "codigo", "texto": "> library(shiny)"}, {"tipo": "codigo", "texto": "> library(testthat)"}, {"tipo": "codigo", "texto": "> totales <- data.frame(estacion_id = c(\"E06\", \"E10\"),"}, {"tipo": "codigo", "texto": "+                       salidas = c(3190, 2894), llegadas = c(3290, 1495))"}, {"tipo": "codigo", "texto": "> balanceServer <- function(id, totales) {"}, {"tipo": "codigo", "texto": "+   moduleServer(id, function(input, output, session) {"}, {"tipo": "codigo", "texto": "+     balance <- reactive({"}, {"tipo": "codigo", "texto": "+       req(input$estacion)"}, {"tipo": "codigo", "texto": "+       f <- totales[totales$estacion_id == input$estacion, ]"}, {"tipo": "codigo", "texto": "+       f$llegadas - f$salidas      # balance = llegadas - salidas"}, {"tipo": "codigo", "texto": "+     })"}, {"tipo": "codigo", "texto": "+     output$texto <- renderText(paste(input$estacion, \"gana\", balance(), \"bicis\"))"}, {"tipo": "codigo", "texto": "+     balance"}, {"tipo": "codigo", "texto": "+   })"}, {"tipo": "codigo", "texto": "+ }"}, {"tipo": "codigo", "texto": "> testServer(balanceServer, args = list(totales = totales), {"}, {"tipo": "codigo", "texto": "+   expect_error(balance(), class = \"shiny.silent.error\")  # req() detiene sin ruido"}, {"tipo": "codigo", "texto": "+   session$setInputs(estacion = \"E10\")"}, {"tipo": "codigo", "texto": "+   expect_equal(balance(), -1399)"}, {"tipo": "codigo", "texto": "+ })"}, {"tipo": "codigo", "texto": "> cat(\"VERDE: req() se porta como se espera\\n\")"}, {"tipo": "stdout", "texto": "VERDE: req() se porta como se espera"}]}};
+  const CAB=['library(shiny)','library(testthat)','',
+    '# Totales del período (de la tabla del curso)',
+    'totales <- data.frame(estacion_id = c("E06", "E10"),',
+    '                      salidas = c(3190, 2894), llegadas = c(3290, 1495))',''].join('\n');
+  const MOD=fix=>['# El módulo: dice cuántas bicis gana o pierde la estación elegida',
+    'balanceServer <- function(id, totales) {',
+    '  moduleServer(id, function(input, output, session) {',
+    '    balance <- reactive({',
+    '      req(input$estacion)',
+    '      f <- totales[totales$estacion_id == input$estacion, ]',
+    fix?'      f$llegadas - f$salidas      # balance = llegadas - salidas':'      f$salidas - f$llegadas      # el balance, ¿o era al revés?',
+    '    })',
+    '    output$texto <- renderText(paste(input$estacion, "gana", balance(), "bicis"))',
+    '    balance',
+    '  })',
+    '}',''].join('\n');
+  const PRUEBA=['# La prueba: fija entradas sin navegador y comprueba los resultados',
+    'testServer(balanceServer, args = list(totales = totales), {',
+    '  session$setInputs(estacion = "E10")',
+    '  expect_equal(balance(), -1399)        # Las Lomas pierde bicis',
+    '  session$setInputs(estacion = "E06")',
+    '  expect_equal(balance(), 100)',
+    '  expect_equal(output$texto, "E06 gana 100 bicis")',
+    '  expect_equal(session$returned(), 100) # lo que devuelve el módulo',
+    '})',
+    'cat("VERDE: las 4 comprobaciones pasaron\\n")'].join('\n');
+  const REQ=['# ¿Y si todavía no se eligió ninguna estación?',
+    'testServer(balanceServer, args = list(totales = totales), {',
+    '  expect_error(balance(), class = "shiny.silent.error")  # req() detiene sin ruido',
+    '  session$setInputs(estacion = "E10")',
+    '  expect_equal(balance(), -1399)',
+    '})',
+    'cat("VERDE: req() se porta como se espera\\n")'].join('\n');
+  const EJ={
+    rojo:{t:'1 · La prueba en rojo',c:CAB+MOD(false)+PRUEBA,
+      x:'La prueba esperaba −1.399 para E10 y el módulo devolvió 1.399: el signo está al revés. <code>expect_equal</code> se detiene en la primera comprobación que falla y dice el valor que vio y el que esperaba. Corrige la línea del balance en el código (cambia el orden de la resta) y vuelve a correr.'},
+    verde:{t:'2 · La prueba en verde',c:CAB+MOD(true)+PRUEBA,
+      x:'Con <code>llegadas - salidas</code> pasan las cuatro comprobaciones: el reactivo, el texto de la salida y el valor que devuelve el módulo. Todo sin abrir un navegador ni hacer clic: <code>session$setInputs()</code> hace de usuario. Si mañana alguien «arregla» la resta, esta prueba se pone roja antes de publicar.'},
+    req:{t:'3 · Probar que req() detiene el cálculo',c:CAB+MOD(true)+REQ,
+      x:'Antes de elegir una estación, <code>input$estacion</code> es <code>NULL</code> y <code>req()</code> detiene el reactivo con un error silencioso, de la clase <code>shiny.silent.error</code>: en la aplicación, la salida queda en blanco en lugar de mostrar un error. La prueba lo comprueba de forma explícita.'}
+  };
+  window.__ej_13_lab_2=Object.fromEntries(Object.entries(EJ).map(([k,e])=>[k,e.c]));
+  window.__paq=['shiny','testthat'];
+  let w=null;
+  const sel=$('#c13l2-ej'),cod=$('#c13l2-cod'),log=$('#c13l2-log');
+  sel.innerHTML=Object.entries(EJ).map(([k,e])=>'<option value="'+k+'">'+e.t+'</option>').join('');
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  function estado(t,c){const e=$('#c13l2-estado');e.textContent=t;e.className='c13l2-estado'+(c?' '+c:'');}
+  function texto(salida){return salida.filter(o=>o.tipo!=='codigo').map(o=>o.tipo==='stdout'?esc(o.texto)+'\n':'<span class="c13l2-err">'+esc(o.texto)+'</span>\n').join('');}
+  function semaforo(salida,error){
+    const s=$('#c13l2-sem'),verde=!error&&salida.some(o=>/VERDE/.test(o.texto));
+    s.className='c13l2-semaforo '+(verde?'verde':error?'rojo':'');
+    $('#c13l2-sem-t').textContent=verde?'Verde: la prueba pasa':error?'Rojo: la prueba falla':'Sin correr';
+  }
+  function explicar(k,error,salida){
+    const verde=!error&&salida&&salida.some(o=>/VERDE/.test(o.texto));
+    let t='<span class="big">'+EJ[k].t+'</span><span>'+EJ[k].x+'</span>';
+    if(k==='rojo'&&verde)t='<span class="ok">¡Verde! Arreglaste el módulo.</span><span>La misma prueba que fallaba ahora pasa: así se trabaja con pruebas. Primero una prueba que describe lo correcto y falla; después el cambio mínimo que la pone en verde.</span>';
+    else if(k!=='rojo'&&error)t='<span class="warn">La prueba falló.</span><span>Lee el mensaje: dice qué comprobación falló, qué valor vio y cuál esperaba. Si cambiaste el código a propósito, eso es lo que la prueba está para atrapar.</span>';
+    $('#c13l2-out').innerHTML=t;
+  }
+  function mostrarGuardado(){
+    const k=sel.value,g=GUARDADO&&GUARDADO[k];cod.value=EJ[k].c;$('#c13l2-sello').textContent='guardado';
+    if(!g){log.textContent='';semaforo([],false);explicar(k,false,[]);return;}
+    log.innerHTML=texto(g.salida);semaforo(g.salida,!!g.error);explicar(k,!!g.error,g.salida);
+  }
+  sel.addEventListener('change',()=>{if(w){cod.value=EJ[sel.value].c;log.innerHTML='';semaforo([],false);explicar(sel.value,false,[]);}else mostrarGuardado();});
+  $('#c13l2-rest').addEventListener('click',()=>{if(w)cod.value=EJ[sel.value].c;else mostrarGuardado();});
+  async function preparar(){
+    $('#c13l2-cargar').disabled=true;
+    try{
+      w=await R.cargar(['shiny','testthat'],t=>estado(t));
+      estado('Listo: R 4.6, shiny y testthat en tu navegador · corre la prueba','ok');
+      $('#c13l2-run').disabled=false;$('#c13l2-cargar').hidden=true;$('#c13l2-sello').textContent='en vivo';
+    }catch(e){estado('No se pudo cargar R. Revisa tu conexión y vuelve a intentar; el resultado guardado sigue abajo.','warn');$('#c13l2-cargar').disabled=false;}
+  }
+  $('#c13l2-cargar').addEventListener('click',preparar);
+  async function ejecutar(){
+    if(!w||$('#c13l2-run').disabled)return;
+    $('#c13l2-run').disabled=true;estado('Corriendo la prueba…');
+    const r=await R.correr(w,'13-lab-2',cod.value);
+    log.innerHTML=texto(r.salida);log.scrollTop=log.scrollHeight;
+    semaforo(r.salida,r.error);explicar(sel.value,r.error,r.salida);
+    estado('Listo · la prueba corrió en tu navegador',r.error?'warn':'ok');
+    $('#c13l2-run').disabled=false;
+  }
+  $('#c13l2-run').addEventListener('click',ejecutar);
+  cod.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();ejecutar();}});
+  mostrarGuardado();
+})();
+</script>
+<script>
+(function(){
+  const raiz=document.querySelector('[id="13-lab-1"]');
+  const $=s=>raiz.querySelector(s);
+  const PREG=[
+    {k:'secreto',rot:'1 · Datos',p:'¿La aplicación usa datos privados o secretos (la contraseña de una base de datos, una clave de API)?',
+     ops:[['no','No: datos públicos o de ejemplo'],['si','Sí']]},
+    {k:'quien',rot:'2 · Quién la usa',p:'¿Quién va a abrir la aplicación?',
+     ops:[['publico','Cualquiera, sin iniciar sesión'],['equipo','Un equipo pequeño, con permiso'],['empresa','Toda la organización, con su cuenta de la empresa']]},
+    {k:'horas',rot:'3 · Uso',p:'¿Cuántas horas al mes estará abierta, sumando a todos los usuarios?',
+     ops:[['25','Hasta 25'],['100','Hasta 100'],['500','Hasta 500'],['2000','Hasta 2.000'],['mas','Más de 2.000']]},
+    {k:'pesado',rot:'4 · Cálculo',p:'¿Consulta una base de datos, usa paquetes que no corren en el navegador o carga muchos datos?',
+     ops:[['no','No: los datos caben en unos pocos MB'],['si','Sí']]},
+    {k:'admin',rot:'5 · Tu equipo',p:'¿Alguien de tu equipo administra servidores Linux o contenedores?',
+     ops:[['no','No'],['si','Sí']]}
+  ];
+  const r={secreto:'no',quien:'publico',horas:'25',pesado:'no',admin:'no'};
+  const caja=$('#c13l1-preg');
+  PREG.forEach(q=>{
+    const d=document.createElement('div');d.className='c13l1-q';d.setAttribute('role','group');d.setAttribute('aria-label',q.p);
+    d.innerHTML='<span class="c13l1-rot">'+q.rot+'</span><span class="c13l1-p">'+q.p+'</span><div class="btns"></div>';
+    const b=d.querySelector('.btns');
+    q.ops.forEach(([v,t])=>{const x=document.createElement('button');x.type='button';x.textContent=t;x.dataset.k=q.k;x.dataset.v=v;
+      x.setAttribute('aria-pressed',r[q.k]===v?'true':'false');
+      x.addEventListener('click',()=>{r[q.k]=v;b.querySelectorAll('button').forEach(y=>y.setAttribute('aria-pressed',y===x?'true':'false'));pintar();});
+      b.appendChild(x);});
+    caja.appendChild(d);
+  });
+  const nh={'25':25,'100':100,'500':500,'2000':2000,'mas':5000};
+  // Planes de shinyapps.io por horas activas al mes (noviembre de 2026)
+  const SA=[[25,'Free','US$ 0'],[100,'Starter','US$ 13'],[500,'Basic','US$ 49'],[2000,'Standard','US$ 119'],[10000,'Professional','US$ 349']];
+  function planSA(h,auth){let p=SA.find(x=>x[0]>=h);if(auth&&p[0]<2000)p=SA[3];return p;}
+  function evaluar(){
+    const h=nh[r.horas],priv=r.quien!=='publico',out=[];
+    // Shinylive
+    let m=[];
+    if(r.secreto==='si')m.push('el código y los datos viajan al navegador de cada visitante: un secreto deja de serlo');
+    if(r.pesado==='si')m.push('webR no conecta con tu base de datos ni corre todos los paquetes, y todo se descarga al abrir');
+    if(priv)m.push('un sitio estático en GitHub Pages es público; no hay inicio de sesión');
+    out.push({n:'Shinylive en GitHub Pages',c:'US$ 0',m});
+    // shinyapps.io
+    const p=planSA(h,priv);m=[];
+    if(r.quien==='empresa')m.push('sin inicio de sesión único (SSO) con la cuenta de la empresa');
+    out.push({n:'shinyapps.io · plan '+p[1],c:p[2]+' al mes',m,plan:p});
+    // Connect Cloud
+    m=[];let cc=['Free','US$ 0 al mes'];
+    if(r.quien==='equipo')cc=['Enhanced','US$ 59 al mes'];
+    if(r.quien==='empresa'){cc=['Enterprise','se cotiza'];}
+    else if(h>500&&r.quien==='publico')cc=['Enhanced','US$ 59 al mes'];
+    else if(h>20&&r.quien==='publico')cc=['Basic','US$ 19 al mes'];
+    if(r.secreto==='si'&&cc[0]==='Free')cc=['Basic','US$ 19 al mes'];
+    out.push({n:'Posit Connect Cloud · plan '+cc[0],c:cc[1],m});
+    // Posit Connect en tus servidores
+    m=[];
+    if(r.admin==='no')m.push('hay que instalarlo y mantenerlo en servidores propios');
+    if(r.quien==='publico'&&h<=2000)m.push('es mucho producto para una aplicación pública y pequeña');
+    out.push({n:'Posit Connect en tus servidores',c:'se cotiza (licencia anual)',m});
+    // Shiny Server / Docker
+    m=[];
+    if(r.admin==='no')m.push('nadie que actualice el sistema, el certificado HTTPS y las copias');
+    out.push({n:'Contenedor Docker o Shiny Server en un servidor propio',c:'el servidor'+(priv?', más el proxy que pide la sesión':''),m});
+    return out;
+  }
+  function elegir(o){
+    const ok=o.filter(x=>!x.m.length);
+    // orden de preferencia según el caso
+    if(!ok.length)return null;
+    const pref=r.quien==='empresa'?['Posit Connect en tus servidores','Posit Connect Cloud','Contenedor','shinyapps.io']
+      :r.quien==='equipo'?['Posit Connect Cloud','shinyapps.io','Contenedor','Posit Connect en']
+      :['Shinylive','Posit Connect Cloud','shinyapps.io','Contenedor','Posit Connect en'];
+    if(r.admin==='si'&&r.quien!=='publico')pref.unshift('Contenedor');
+    for(const p of pref){const x=ok.find(y=>y.n.startsWith(p));if(x)return x;}
+    return ok[0];
+  }
+  const POR={
+    'Shinylive':'Sin servidor que pagar ni mantener: R corre en el navegador de cada visitante. Ideal para lo público y liviano.',
+    'shinyapps.io':'Publicas con una línea desde R y Posit se encarga del servidor; el plan sale de las horas activas que necesitas.',
+    'Posit Connect Cloud':'Publicas desde un repositorio de GitHub y Posit se encarga del servidor; los planes pagos dejan compartir en privado.',
+    'Posit Connect en':'Inicio de sesión con la cuenta de la empresa, permisos por grupo y tus datos dentro de tu red; lo administra tu equipo.',
+    'Contenedor':'Tu equipo controla todo: la imagen con R y los paquetes congelados, la red y el proxy que pide la sesión.'
+  };
+  function pintar(){
+    const o=evaluar(),e=elegir(o);
+    if(e){
+      const k=Object.keys(POR).find(k=>e.n.startsWith(k));
+      $('#c13l1-rec').innerHTML='<span class="c13l1-rot">Opción recomendada</span><b class="n">'+e.n+'</b><span class="costo">'+e.c+'</span><span>'+POR[k]+'</span>';
+    }else{
+      $('#c13l1-rec').innerHTML='<span class="c13l1-rot">Opción recomendada</span><b class="n">Ninguna encaja sola</b><span>Con estas respuestas hace falta alguien que administre la plataforma o un plan pago. Prueba responder «Sí» en la pregunta 5.</span>';
+    }
+    const desc=o.filter(x=>x.m.length);
+    let t='Con '+(r.secreto==='si'?'secretos':'datos públicos')+', '+({publico:'uso público',equipo:'un equipo con permiso',empresa:'cuentas de la empresa'})[r.quien]+' y hasta '+(r.horas==='mas'?'más de 2.000':Number(r.horas).toLocaleString('es'))+' horas al mes, ';
+    t+=desc.length?'quedan fuera '+desc.length+' de las 5 opciones. ':'las 5 opciones sirven; gana la más simple. ';
+    if(r.secreto==='si'||r.pesado==='si')t+='La pregunta que más pesa es la 1 o la 4: en cuanto hay un secreto o una base de datos, la aplicación necesita un servidor que la guarde. ';
+    else if(r.quien==='publico')t+='Cambia la pregunta 1 a «Sí» y mira cómo Shinylive desaparece de la lista. ';
+    if(r.quien!=='publico')t+='El inicio de sesión cuesta: en shinyapps.io empieza en el plan Standard aunque uses pocas horas.';
+    $('#c13l1-why').textContent=t;
+    $('#c13l1-tab tbody').innerHTML=o.map(x=>'<tr class="'+(e&&x===e?'si':'')+'"><td>'+x.n+'</td><td>'+x.c+'</td>'+
+      (x.m.length?'<td class="no">no<span class="por">'+x.m.join('; ')+'</span></td>':'<td>sí</td>')+'</tr>').join('');
+  }
+  pintar();
+})();
+</script>
+</body>
+</html>

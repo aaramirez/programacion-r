@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="es">
+<head>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-KX76XF8R');</script>
+<!-- End Google Tag Manager -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vectores y tipos · R y aplicaciones interactivas · R y aplicaciones interactivas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Programación en R, gráficos dinámicos y aplicaciones Shiny para el análisis de datos: el lenguaje, el tidyverse, ggplot2, htmlwidgets, Quarto y Shiny, con código que se ejecuta en la página con webR.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400;1,8..60,600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KX76XF8R"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<div class="wrap" data-page="vectores-y-tipos">
+<header class="topbar"><a class="brand" href="index.html">R y aplicaciones <b>interactivas</b></a><span class="eyebrow">Curso visual e interactivo · Datos e inteligencia artificial</span><a class="al-sitio" href="https://aaramirez.github.io/">← Todos los cursos</a></header>
+<div class="layout">
+<nav class="toc" id="toc" aria-label="Ruta de aprendizaje"></nav>
+<main>
+<header class="page-head"><span class="num">CAPÍTULO 02 DE 14</span><h1>Vectores, tipos y vectorización</h1><p class="lede">En R no hay números sueltos: hasta el 5 es un vector de largo uno. Este capítulo presenta los cuatro tipos atómicos, cómo R convierte unos en otros sin avisar, los valores especiales (NA, NULL, NaN, Inf), las tres formas de indexar y la vectorización, la idea que hace que R se escriba distinto de casi cualquier otro lenguaje.</p></header>
+<section><h2>Los tipos atómicos: lógico, entero, doble, texto</h2><div class="prose"><p>Ernesto Salas le hace a Gabriela una pregunta simple: «¿Cuánto dura un viaje típico?». Para responderla, Gabriela necesita la duración de cada uno de los 72.283 viajes de RiberaBici: el fin menos el inicio. En una hoja de cálculo escribiría la fórmula en la primera fila y la arrastraría hacia abajo. En R escribe una sola línea, <code>dur &lt;- fin - inicio</code>, y obtiene las 72.283 duraciones de una vez. Para entender por qué funciona así hay que empezar por la pieza más pequeña de R: el vector.</p><p>Un <b>vector atómico</b> (<i>atomic vector</i>) es una secuencia de valores <b>del mismo tipo</b>, guardados uno detrás de otro. Atómico quiere decir que cada elemento es indivisible: un número, un texto, un verdadero o falso. R tiene cuatro tipos atómicos de uso diario.</p></div><div class="analogia"><b>Imagínalo así</b><p>Piensa en una cubeta de hielo. Cada compartimiento guarda una sola cosa, y todos guardan lo mismo: agua. Si quieres guardar jugo, usas otra cubeta. Un vector atómico es una cubeta: muchas celdas en fila, todas del mismo material. Por eso R puede tratarlas todas a la vez: sabe exactamente qué hay en cada una.</p></div><div class="prose"><ul><li><b>Lógico</b> (<i>logical</i>): <code>TRUE</code>, <code>FALSE</code> o <code>NA</code>. Es la respuesta a una pregunta de sí o no: ¿el viaje fue en bicicleta eléctrica?</li><li><b>Entero</b> (<i>integer</i>): números sin decimales, escritos con una <code>L</code> al final: <code>2008L</code>. Al leer <code>viajes.csv</code>, la columna <code>anio_nacimiento</code> llega como entera.</li><li><b>Doble</b> (<i>double</i>): números con decimales, guardados en coma flotante de doble precisión (8 bytes). Es el número por omisión de R: si escribes <code>2008</code>, sin <code>L</code>, R lo guarda como doble. Las duraciones en minutos son dobles.</li><li><b>Texto</b> (<i>character</i>): cadenas entre comillas, como <code>"E06"</code> o <code>"abonado"</code>. Los identificadores de estación son texto, aunque parezcan códigos.</li></ul><p>Para saber el tipo de algo se usa <code>typeof()</code>. Las funciones <code>is.logical()</code>, <code>is.integer()</code>, <code>is.double()</code>, <code>is.character()</code> y <code>is.numeric()</code> responden con <code>TRUE</code> o <code>FALSE</code>; <code>is.numeric()</code> dice <code>TRUE</code> tanto para enteros como para dobles, que son los dos tipos <b>numéricos</b> (<i>numeric</i>).</p></div><figure class="fig fig-comparacion" id="02-diagrama-1"><div class="lienzo"><svg viewBox="0 0 960 330" style="min-width:740px;font-variant-ligatures:none" role="img" aria-label="Los cuatro tipos atómicos de R: lógico, entero, doble y texto, con sus valores posibles, un vector de ejemplo de los viajes de RiberaBici y cómo preguntarle a R el tipo">
+<rect x="16" y="16" width="220" height="250" rx="10" class="c-apl"/><text x="30" y="42" class="t t-b">lógico</text><text x="30" y="60" class="t t-s t-mono k-apl">typeof: "logical"</text><text x="30" y="88" class="t t-xs t-b t-m">VALORES</text><text x="30" y="106" class="t t-s t-mono">TRUE  FALSE  NA</text><text x="30" y="136" class="t t-xs t-b t-m">EN RIBERABICI</text><text x="30" y="154" class="t t-s t-b">es_electrica</text><rect x="30" y="164" width="192" height="28" rx="5" class="caja"/><text x="38" y="183" class="t t-s t-mono">c(TRUE, FALSE, FALSE)</text><text x="30" y="220" class="t t-xs t-m">4 bytes por valor en memoria</text><text x="30" y="250" class="t t-s t-mono">is.logical(x)</text>
+<rect x="252" y="16" width="220" height="250" rx="10" class="c-tra"/><text x="266" y="42" class="t t-b">entero</text><text x="266" y="60" class="t t-s t-mono k-tra">typeof: "integer"</text><text x="266" y="88" class="t t-xs t-b t-m">VALORES</text><text x="266" y="106" class="t t-s t-mono">2008L  -3L  NA</text><text x="266" y="136" class="t t-xs t-b t-m">EN RIBERABICI</text><text x="266" y="154" class="t t-s t-b">anio_nacimiento</text><rect x="266" y="164" width="192" height="28" rx="5" class="caja"/><text x="274" y="183" class="t t-s t-mono">c(2004L, 1992L, NA)</text><text x="266" y="220" class="t t-xs t-m">números sin decimales, 4 bytes</text><text x="266" y="250" class="t t-s t-mono">is.integer(x)</text>
+<rect x="488" y="16" width="220" height="250" rx="10" class="c-red"/><text x="502" y="42" class="t t-b">doble</text><text x="502" y="60" class="t t-s t-mono k-red">typeof: "double"</text><text x="502" y="88" class="t t-xs t-b t-m">VALORES</text><text x="502" y="106" class="t t-s t-mono">18.65  -51.4  Inf  NaN</text><text x="502" y="136" class="t t-xs t-b t-m">EN RIBERABICI</text><text x="502" y="154" class="t t-s t-b">dur (minutos)</text><rect x="502" y="164" width="192" height="28" rx="5" class="caja"/><text x="510" y="183" class="t t-s t-mono">c(12.8, 32.9, 16.5)</text><text x="502" y="220" class="t t-xs t-m">decimales, 8 bytes; el número por omisión</text><text x="502" y="250" class="t t-s t-mono">is.numeric(x)</text>
+<rect x="724" y="16" width="220" height="250" rx="10" class="c-fis"/><text x="738" y="42" class="t t-b">texto</text><text x="738" y="60" class="t t-s t-mono k-fis">typeof: "character"</text><text x="738" y="88" class="t t-xs t-b t-m">VALORES</text><text x="738" y="106" class="t t-s t-mono">"E06"  "abonado"</text><text x="738" y="136" class="t t-xs t-b t-m">EN RIBERABICI</text><text x="738" y="154" class="t t-s t-b">estacion_origen</text><rect x="738" y="164" width="192" height="28" rx="5" class="caja"/><text x="746" y="183" class="t t-s t-mono">c("E23", "E01", "E19")</text><text x="738" y="220" class="t t-xs t-m">cadenas de cualquier largo</text><text x="738" y="250" class="t t-s t-mono">is.character(x)</text>
+<text x="16" y="294" class="t t-s">Hay dos tipos atómicos más, complejo (<tspan class="t-mono">2+3i</tspan>) y crudo (<tspan class="t-mono">raw</tspan>, bytes), que casi no se usan en análisis de datos.</text>
+<text x="16" y="316" class="t t-s t-m">Entero y doble son los dos «numéricos»: is.numeric() responde TRUE para ambos. Un número sin L, como 2008, es doble.</text></svg></div><figcaption><b>Los cuatro tipos atómicos, con un ejemplo de RiberaBici.</b> Cada columna es un tipo, con su color (que se repite en todas las figuras del capítulo): los valores que puede guardar, una columna de los viajes que tiene ese tipo, un vector de ejemplo y la función que pregunta si algo es de ese tipo. Abajo, los dos tipos que casi no se usan en análisis y la aclaración de que un número escrito sin <code>L</code> siempre es doble.</figcaption></figure><div class="prose"><p>Los dobles tienen una trampa que conviene conocer desde el principio. Se guardan en binario, y muchos decimales no tienen representación exacta en binario, igual que 1/3 no tiene una representación exacta en decimal (0,333…). Por eso, en R, <code>0.1 + 0.2 == 0.3</code> responde <code>FALSE</code>. La diferencia es minúscula, del orden de una diez mil billonésima, pero el <code>==</code> la detecta. Para comparar dobles se usa <code>all.equal()</code>, que tolera esas diferencias: <code>isTRUE(all.equal(0.1 + 0.2, 0.3))</code> responde <code>TRUE</code>.</p><p>Una nota sobre la escritura de números: en el texto de este curso los números llevan coma decimal (18,65 minutos), como se escriben en español. En el código de R siempre se usa el punto (<code>18.65</code>), porque la coma separa argumentos: <code>c(18,65)</code> es un vector de dos números, el 18 y el 65.</p></div></section>
+<section><h2>Todo es un vector: un número es un vector de largo uno</h2><div class="prose"><p>En la mayoría de los lenguajes existe el <b>escalar</b> (<i>scalar</i>), un valor suelto, y aparte las listas o arreglos que agrupan muchos. En R no hay escalares. El número <code>5</code> es un vector de un elemento: <code>length(5)</code> responde <code>1</code> e <code>is.vector(5)</code> responde <code>TRUE</code>. Por eso la consola imprime <code>[1] 5</code>: el <code>[1]</code> dice que lo que sigue es el elemento número 1 del vector. Cuando un vector ocupa varias líneas, cada línea empieza con la posición de su primer elemento, <code>[1]</code>, <code>[13]</code>, <code>[25]</code>, para que sepas dónde estás.</p></div><div class="analogia"><b>Imagínalo así</b><p>En una ferretería no venden un tornillo: venden una bolsa de tornillos, aunque la bolsa traiga uno solo. Todo lo que sale del mostrador viene en bolsa, y por eso todas las herramientas de la tienda están pensadas para trabajar con bolsas. R es esa ferretería: todo viene en vector, y todas sus funciones están hechas para vectores.</p></div><div class="prose"><p>Hay varias formas de crear vectores:</p><ul><li><code>c(12.8, 32.9, 16.5)</code> <b>combina</b> (<i>combine</i>) valores en un vector. Es la función más usada de R.</li><li><code>1:5</code> crea la secuencia de enteros del 1 al 5; <code>5:1</code> la crea al revés.</li><li><code>seq(0, 60, by = 15)</code> crea una secuencia con paso: <code>0 15 30 45 60</code>.</li><li><code>rep(c("abonado", "ocasional"), times = c(3, 2))</code> repite valores: tres <code>"abonado"</code> y dos <code>"ocasional"</code>.</li><li><code>numeric(10)</code>, <code>character(10)</code> y <code>logical(10)</code> crean vectores de largo 10 llenos de ceros, textos vacíos o <code>FALSE</code>, útiles para llenarlos después.</li></ul><p>Un vector puede llevar <b>nombres</b> (<i>names</i>): etiquetas para cada elemento. <code>names(x) &lt;- c("E04", "E10", "E22")</code> le pone a cada duración el nombre de su estación de origen, y al imprimir R muestra los nombres encima de los valores. Los nombres no cambian el tipo ni el largo: son un <b>atributo</b> (<i>attribute</i>), información extra pegada al vector, tema del capítulo 03.</p><p>Que todo sea un vector no es un detalle técnico: es la razón por la que las funciones de R reciben columnas enteras. <code>mean(dur)</code> calcula el promedio de 72.283 duraciones con la misma sintaxis con la que calcularía el de tres.</p></div></section>
+<section><h2>Coerción implícita y explícita</h2><div class="prose"><p>Un vector atómico tiene un solo tipo. ¿Qué pasa si mezclas tipos en un <code>c()</code>? R no da error: convierte todo al tipo que puede guardar a todos. A eso se le llama <b>coerción</b> (<i>coercion</i>).</p></div><div class="analogia"><b>Imagínalo así</b><p>Imagina un formulario donde una casilla pide la edad y alguien escribe «treinta y dos». El sistema puede rechazarlo, o puede guardar todas las edades como texto para que quepan «32» y «treinta y dos» juntos. R elige siempre lo segundo: busca el tipo más general que sirva para todos, aunque eso te cueste poder sumar después.</p></div><div class="prose"><p>La <b>coerción implícita</b> sigue una escalera fija, de lo más simple a lo más general: <b>lógico → entero → doble → texto</b>. Subir nunca pierde información: un <code>TRUE</code> se puede guardar como el entero <code>1</code>, un entero como un doble, y cualquier cosa como texto. Por eso:</p><ul><li><code>c(TRUE, 2L)</code> da el vector entero <code>1 2</code>.</li><li><code>c(TRUE, 2008L, 18.65)</code> da el vector doble <code>1.00 2008.00 18.65</code>.</li><li><code>c(18.65, "E06")</code> da el vector de texto <code>"18.65" "E06"</code>: ya no puedes sumar el primer elemento.</li></ul><p>La coerción también ocurre en las operaciones. <code>TRUE + TRUE</code> vale <code>2</code>, porque la suma necesita números y el lógico sube a entero. Esto es muy útil: <code>sum(dur &gt; 30)</code> cuenta cuántos viajes duran más de media hora, porque cada <code>TRUE</code> vale 1 y cada <code>FALSE</code> vale 0, y <code>mean(dur &gt; 30)</code> da la proporción.</p></div><figure class="fig fig-esquema" id="02-diagrama-2"><div class="lienzo"><svg viewBox="0 0 960 360" style="min-width:740px;font-variant-ligatures:none" role="img" aria-label="Escalera de la coerción: lógico, entero, doble y texto de abajo hacia arriba. La coerción implícita sube siempre sin perder información; la explícita con as. puede bajar y entonces puede perder información o producir NA">
+<defs><marker id="c2d2-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="fl-muted"/></marker><marker id="c2d2-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="k-red"/></marker><marker id="c2d2-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="k-warm"/></marker></defs>
+<text x="16" y="24" class="t t-xs t-b t-m">IMPLÍCITA: c() Y LAS OPERACIONES SUBEN SOLAS</text>
+<rect x="40" y="272" width="200" height="50" rx="8" class="c-apl"/><text x="56" y="296" class="t t-b">lógico</text><text x="56" y="313" class="t t-s t-mono">TRUE</text>
+<rect x="110" y="202" width="200" height="50" rx="8" class="c-tra"/><text x="126" y="226" class="t t-b">entero</text><text x="126" y="243" class="t t-s t-mono">1L</text>
+<rect x="180" y="132" width="200" height="50" rx="8" class="c-red"/><text x="196" y="156" class="t t-b">doble</text><text x="196" y="173" class="t t-s t-mono">1</text>
+<rect x="250" y="62" width="200" height="50" rx="8" class="c-fis"/><text x="266" y="86" class="t t-b">texto</text><text x="266" y="103" class="t t-s t-mono">"1"  "TRUE"</text>
+<path d="M140 270L172 254" class="ln s-red" style="stroke-width:2" marker-end="url(#c2d2-g)"/>
+<path d="M210 200L242 184" class="ln s-red" style="stroke-width:2" marker-end="url(#c2d2-g)"/>
+<path d="M280 130L312 114" class="ln s-red" style="stroke-width:2" marker-end="url(#c2d2-g)"/>
+<text x="330" y="232" class="t t-s">c(TRUE, 2L)  →  1 2</text>
+<text x="400" y="162" class="t t-s">c(2L, 18.65)  →  2.00 18.65</text>
+<text x="470" y="92" class="t t-s">c(18.65, "E06")  →  "18.65" "E06"</text>
+<text x="16" y="346" class="t t-s t-m">Subir nunca pierde información: por eso R lo hace sin preguntar.</text>
+<rect x="600" y="132" width="344" height="190" rx="10" class="caja"/>
+<text x="616" y="156" class="t t-xs t-b k-warm">EXPLÍCITA: as.*() PUEDE BAJAR Y PERDER</text>
+<text x="616" y="182" class="t t-s t-mono">as.integer(3.9)</text><text x="800" y="182" class="t t-s">→ 3 (corta)</text>
+<text x="616" y="206" class="t t-s t-mono">as.numeric("18.65")</text><text x="800" y="206" class="t t-s">→ 18.65</text>
+<text x="616" y="230" class="t t-s t-mono">as.numeric("18,65")</text><text x="800" y="230" class="t t-s k-warm t-b">→ NA + aviso</text>
+<text x="616" y="254" class="t t-s t-mono">as.logical("sí")</text><text x="800" y="254" class="t t-s k-warm t-b">→ NA</text>
+<text x="616" y="278" class="t t-s t-mono">as.logical(0)</text><text x="800" y="278" class="t t-s">→ FALSE</text>
+<text x="616" y="306" class="t t-xs t-m">bajar es tu decisión: revisa cuántos NA aparecen</text>
+<path d="M596 150C540 150 520 120 456 100" class="ln s-warm ln-d" marker-end="url(#c2d2-w)"/>
+</svg></div><figcaption><b>La escalera de la coerción.</b> A la izquierda, los cuatro tipos como peldaños, del lógico abajo al texto arriba, con un ejemplo de <code>c()</code> junto a cada salto: la coerción implícita solo sube, y R la hace sin preguntar porque no se pierde nada. A la derecha, en el recuadro, la coerción explícita con las funciones <code>as.*()</code>, que también pueden bajar: ahí sí se puede perder información (<code>as.integer(3.9)</code> corta a 3) o aparecer un <code>NA</code> (un texto con coma decimal que no se reconoce como número).</figcaption></figure><div class="prose"><p>La <b>coerción explícita</b> la pides tú, con las funciones <code>as.logical()</code>, <code>as.integer()</code>, <code>as.numeric()</code> y <code>as.character()</code>. Sirve para bajar por la escalera, y ahí está el riesgo:</p><ul><li><code>as.integer(3.9)</code> devuelve <code>3</code>: corta los decimales, no redondea.</li><li><code>as.numeric("18.65")</code> devuelve <code>18.65</code>, pero <code>as.numeric("18,65")</code> devuelve <code>NA</code> con el aviso <i>NAs introduced by coercion</i> (se introdujeron NA por la coerción): R no reconoce la coma decimal. Es el error más común al leer datos escritos en español.</li><li><code>as.logical("sí")</code> devuelve <code>NA</code>: R entiende <code>"TRUE"</code>, <code>"true"</code>, <code>"T"</code> y <code>"F"</code>, y nada más.</li></ul><p>La regla práctica: después de una conversión explícita, cuenta cuántos <code>NA</code> aparecieron. Si son más de los que había, algo no se convirtió.</p></div><div class="lab" id="02-lab-3"><div class="lab-title"><span class="tag">Laboratorio</span><h3>La escalera de la coerción: arma un vector y mira qué tipo sale</h3></div><p class="hint">Agrega elementos de distintos tipos al <code>c()</code> y mira cómo R los convierte a todos al tipo más general, con la salida tal como la imprimiría. Abajo, elige una conversión explícita y mira cuándo devuelve <code>NA</code>. Prueba a agregar un texto al final de un vector de números.</p><style>
+[id="02-lab-3"] pre,[id="02-lab-3"] textarea,[id="02-lab-3"] code,[id="02-lab-3"] input,[id="02-lab-3"] .c3l2-cab{font-variant-ligatures:none!important}
+[id="02-lab-3"] .c2l3-rot{font:700 .7rem var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+[id="02-lab-3"] .btns{align-items:center}
+[id="02-lab-3"] .c2l3-esc{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:6px}
+[id="02-lab-3"] .c2l3-esc div{border:1.5px solid var(--line);border-radius:8px;padding:6px;text-align:center;font:600 .8rem var(--f-display);color:var(--muted);transition:transform .2s}
+[id="02-lab-3"] .c2l3-esc div b{display:block;font:700 .9rem var(--f-mono);color:var(--ink)}
+[id="02-lab-3"] .c2l3-esc .lg{border-color:var(--c-apl)} [id="02-lab-3"] .c2l3-esc .lg.on{background:var(--c-apl-s)}
+[id="02-lab-3"] .c2l3-esc .en{border-color:var(--c-tra)} [id="02-lab-3"] .c2l3-esc .en.on{background:var(--c-tra-s)}
+[id="02-lab-3"] .c2l3-esc .db{border-color:var(--c-red)} [id="02-lab-3"] .c2l3-esc .db.on{background:var(--c-red-s)}
+[id="02-lab-3"] .c2l3-esc .tx{border-color:var(--c-fis)} [id="02-lab-3"] .c2l3-esc .tx.on{background:var(--c-fis-s)}
+[id="02-lab-3"] .c2l3-esc .on{color:var(--ink);transform:translateY(-3px);box-shadow:0 2px 0 var(--line)}
+[id="02-lab-3"] pre.c2l3-r{margin:0;font:.82rem/1.5 var(--f-mono);white-space:pre-wrap;overflow-wrap:anywhere;background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--c-red);border-radius:6px;padding:6px 8px}
+[id="02-lab-3"] .c2l3-in{color:var(--c-red)} [id="02-lab-3"] .c2l3-w{color:var(--warm)}
+@media (prefers-reduced-motion: reduce){[id="02-lab-3"] .c2l3-esc div{transition:none;transform:none!important}}
+</style>
+<div class="btns" role="group" aria-label="Agregar un elemento al vector"><span class="c2l3-rot">Agrega a c( )</span>
+  <button type="button" data-v="lg">TRUE</button>
+  <button type="button" data-v="en">2008L</button>
+  <button type="button" data-v="db">18.65</button>
+  <button type="button" data-v="tx">"E06"</button>
+  <button type="button" data-v="na">NA</button>
+  <button type="button" id="c2l3-borrar">Vaciar</button>
+</div>
+<div class="c2l3-esc" aria-hidden="true">
+  <div class="lg" id="c2l3-lg">lógico<b>logical</b></div>
+  <div class="en" id="c2l3-en">entero<b>integer</b></div>
+  <div class="db" id="c2l3-db">doble<b>double</b></div>
+  <div class="tx" id="c2l3-tx">texto<b>character</b></div>
+</div>
+<pre class="c2l3-r" id="c2l3-r" aria-label="El código y lo que responde R"></pre>
+<div class="opciones"><label>Conversión explícita
+  <select id="c2l3-exp">
+    <option value="0">as.integer(3.9)</option>
+    <option value="1">as.numeric("18.65")</option>
+    <option value="2">as.numeric("18,65")</option>
+    <option value="3">as.logical(c("TRUE", "T", "sí"))</option>
+    <option value="4">as.integer(c(TRUE, FALSE, TRUE))</option>
+    <option value="5">as.character(1/3)</option>
+    <option value="6">sum(c(12.8, 32.9, 16.5) > 15)</option>
+  </select></label></div>
+<pre class="c2l3-r" id="c2l3-e" aria-label="Conversión explícita y su resultado"></pre>
+<div class="readout texto" id="c2l3-out" aria-live="polite"></div></div><div class="caso"><b>Un caso real</b><p><b>Los genes que una hoja de cálculo convertía en fechas.</b> En 2016, un estudio publicado en la revista <i>Genome Biology</i> revisó los archivos suplementarios de miles de artículos de genética y encontró que, de los artículos que publicaban listas de genes en hojas de cálculo, alrededor de uno de cada cinco tenía nombres de genes alterados: la hoja de cálculo convertía solos nombres como SEPT2 o MARCH1 en fechas (2 de septiembre, 1 de marzo). Era una coerción implícita, sin aviso, de texto a fecha. El problema fue tan persistente que en 2020 el comité internacional que nombra los genes humanos cambió el nombre de varios de ellos (SEPT2 pasó a SEPTIN2) para que dejaran de parecer fechas. R lee esos nombres como texto y no los toca, pero la lección vale para cualquier herramienta: cada conversión de tipo que no pediste es un riesgo.</p></div></section>
+<section><h2><code>NA</code>, <code>NULL</code>, <code>NaN</code> e <code>Inf</code></h2><div class="prose"><p>En los datos reales falta información. R tiene cuatro valores especiales para las distintas formas de «no hay un número normal aquí», y conviene no confundirlos.</p></div><div class="analogia"><b>Imagínalo así</b><p>Piensa en la lista de asistencia de una clase. Un casillero en blanco junto al nombre de un alumno quiere decir «no sabemos si vino»: es un <code>NA</code>. Un alumno que no está en la lista no tiene casillero: es un <code>NULL</code>. Si alguien anotó «0 dividido entre 0 alumnos», el resultado no tiene sentido: es un <code>NaN</code>. Y si alguien escribió que vinieron infinitos alumnos, es un <code>Inf</code>.</p></div><div class="prose"><ul><li><b><code>NA</code></b> (<i>not available</i>, no disponible): el valor faltante. El viaje existe, pero no sabemos cuándo terminó. Cada tipo tiene su propio <code>NA</code> (<code>NA</code> es lógico; <code>NA_integer_</code>, <code>NA_real_</code> y <code>NA_character_</code> son de los otros tipos), y por eso puede vivir en cualquier vector sin cambiarle el tipo.</li><li><b><code>NULL</code></b>: la ausencia de valor, ni siquiera un casillero vacío. Tiene largo 0: <code>c(1, NULL, 3)</code> es <code>1 3</code>. Lo devuelven las funciones que no tienen nada que devolver.</li><li><b><code>NaN</code></b> (<i>not a number</i>, no es un número): el resultado de una operación sin sentido matemático, como <code>0/0</code> o <code>sqrt(-1)</code> (que además avisa <i>NaNs produced</i>).</li><li><b><code>Inf</code></b> y <b><code>-Inf</code></b>: infinito positivo y negativo, el resultado de <code>1/0</code> y <code>-1/0</code>. Son números válidos: <code>Inf &gt; 1000000</code> es <code>TRUE</code>.</li></ul><p>La regla de oro del <code>NA</code> es que <b>se contagia</b>: cualquier cálculo con un dato desconocido da un resultado desconocido. <code>NA + 1</code> es <code>NA</code>, <code>NA &gt; 1</code> es <code>NA</code>, y <code>mean(c(18, NA, 20))</code> es <code>NA</code>. Para calcular sin los faltantes, casi todas las funciones de resumen aceptan <code>na.rm = TRUE</code> (<i>NA remove</i>, quitar los NA): <code>mean(c(18, NA, 20), na.rm = TRUE)</code> da <code>19</code>. Hay dos excepciones lógicas razonables: <code>NA &amp; FALSE</code> es <code>FALSE</code> y <code>NA | TRUE</code> es <code>TRUE</code>, porque el resultado ya se sabe sin importar el dato que falta.</p><p>Por la misma razón, <b>nunca</b> se busca un faltante con <code>x == NA</code>: el resultado es <code>NA</code> en todas las posiciones, porque comparar con lo desconocido da desconocido. Se usa <code>is.na(x)</code>, que devuelve <code>TRUE</code> donde falta el dato. <code>is.na()</code> también responde <code>TRUE</code> para un <code>NaN</code>; para distinguirlos está <code>is.nan()</code>.</p></div><div class="practica"><div class="practica-title"><span class="tag">En la terminal</span><h3>Las duraciones de RiberaBici como un vector</h3></div><p>Vas a calcular la duración de los 72.283 viajes con una sola resta y a buscar lo que no cuadra. Necesitas la carpeta <code>bicis</code> con los datos del capítulo 01. Guarda este guion como <code>cap02.R</code> en la carpeta <code>bicis</code>:</p><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln"># cap02.R: las duraciones de los viajes como vectores</span>
+<span class="ln">viajes &lt;- read.csv("datos/viajes.csv", na.strings = "")</span>
+<span class="ln"></span>
+<span class="ln">inicio &lt;- as.POSIXct(viajes$inicio, tz = "UTC")</span>
+<span class="ln">fin &lt;- as.POSIXct(viajes$fin, tz = "UTC")</span>
+<span class="ln">dur &lt;- as.numeric(fin - inicio, units = "mins")   # un vector de 72.283 duraciones</span>
+<span class="ln"></span>
+<span class="ln">typeof(dur)</span>
+<span class="ln">length(dur)</span>
+<span class="ln">head(dur)</span>
+<span class="ln">summary(dur)</span>
+<span class="ln"></span>
+<span class="ln"># NA: los viajes sin fin</span>
+<span class="ln">sum(is.na(dur))</span>
+<span class="ln">mean(dur)</span>
+<span class="ln">mean(dur, na.rm = TRUE)</span>
+<span class="ln"></span>
+<span class="ln"># Indexar por condición: lo que no cuadra</span>
+<span class="ln">sum(dur &lt; 0, na.rm = TRUE)</span>
+<span class="ln">table(viajes$estacion_destino[which(dur &lt; 0)])</span>
+<span class="ln">sum(dur &gt; 12 * 60, na.rm = TRUE)</span>
+<span class="ln"></span>
+<span class="ln"># Coerción: contar con TRUE y FALSE</span>
+<span class="ln">mean(dur &gt; 30, na.rm = TRUE)</span></code></pre><button type="button" class="ver-todo" aria-expanded="false">Ver las 24 líneas</button><button type="button" class="copiar copiar-todo">Copiar</button></div><ol class="steps"><li><span>Córrelo en la consola de RStudio o Positron, con la carpeta <code>bicis</code> como directorio de trabajo. <code>echo = TRUE</code> muestra cada línea junto con su resultado:</span></li></ol><div class="cmds"><div class="cmd-panel" data-so="win mac linux"><div class="cmd-l"><code>source("cap02.R", echo = TRUE)</code><button type="button" class="copiar">Copiar</button></div></div></div><ol class="steps" start="2" style="counter-reset:st 1"><li><span>Mira <code>summary(dur)</code>: el mínimo, la mediana y el máximo. ¿Alguno no tiene sentido para un viaje en bicicleta?</span></li><li><span>Compara <code>mean(dur)</code> con <code>mean(dur, na.rm = TRUE)</code>.</span></li><li><span>Mira en qué estación terminan los viajes con duración negativa.</span></li></ol><p><b>Qué observar:</b> <code>as.POSIXct()</code> convierte el texto en fecha y hora (el capítulo 05 lo trata a fondo), y la resta de dos vectores de 72.283 fechas da 72.283 diferencias sin ningún bucle. <code>typeof(dur)</code> es <code>"double"</code>. <code>summary()</code> muestra una mediana de 18,43 minutos, pero un mínimo de −56,92 y un máximo de 3.539,90 minutos (casi dos días y medio), y 160 <code>NA</code>. <code>mean(dur)</code> da <code>NA</code> porque el <code>NA</code> se contagia; con <code>na.rm = TRUE</code> da 21,30. Hay 265 duraciones negativas y <b>todas</b> terminan en E17, una pista que el capítulo 05 seguirá; 40 viajes pasan de 12 horas, y el 16,9 % de los viajes dura más de 30 minutos. Ninguno de esos números es el definitivo: antes hay que limpiar.</p></div></section>
+<section><h2>Indexar desde 1: por posición, por nombre y por condición</h2><div class="prose"><p>Indexar es sacar algunos elementos de un vector. En R se hace con corchetes, <code>x[ ]</code>, y lo que pones adentro puede ser de tres clases.</p></div><div class="analogia"><b>Imagínalo así</b><p>Piensa en una fila de casilleros de un gimnasio. Puedes pedir uno por su número («el casillero 5»), por el nombre escrito en la puerta («el de Gabriela») o con una regla («todos los que están abiertos»). Los corchetes de R entienden las tres formas de pedir.</p></div><div class="prose"><p><b>Por posición.</b> El primer elemento es el 1, no el 0 como en Python, JavaScript o C. <code>dur[1]</code> es el primero, <code>dur[c(2, 5)]</code> el segundo y el quinto, y <code>dur[length(dur)]</code> el último. Un número negativo <b>quita</b> posiciones: <code>dur[-4]</code> es todo menos el cuarto, y <code>dur[-(1:10)]</code> todo menos los diez primeros. Pedir una posición que no existe no da error: <code>dur[100]</code> en un vector de 16 elementos devuelve <code>NA</code>, y <code>dur[0]</code> devuelve un vector vacío.</p><p><b>Por nombre.</b> Si el vector tiene nombres, <code>x["E10"]</code> saca el elemento con ese nombre, y el resultado conserva el nombre.</p><p><b>Por condición.</b> Es la más poderosa. Adentro de los corchetes va un vector lógico del mismo largo, y R se queda con los elementos donde hay <code>TRUE</code>. Como las comparaciones son vectorizadas, <code>dur &gt; 20</code> produce ese vector lógico de una vez, y <code>dur[dur &gt; 20]</code> devuelve las duraciones de más de 20 minutos. A ese vector de <code>TRUE</code> y <code>FALSE</code> se le llama <b>máscara</b> (<i>mask</i>). Las condiciones se combinan con <code>&amp;</code> (y), <code>|</code> (o) y <code>!</code> (no), y <code>%in%</code> pregunta si cada elemento está en una lista: <code>destino %in% c("E10", "E11", "E12", "E13")</code> marca los viajes que terminan en Las Lomas.</p><p>Dos funciones completan el juego. <code>which(dur &gt; 30)</code> devuelve las <b>posiciones</b> donde la condición es <code>TRUE</code> (e ignora los <code>NA</code>), y <code>sum(dur &gt; 30, na.rm = TRUE)</code> cuenta cuántas son.</p></div><figure class="fig fig-esquema" id="02-diagrama-3"><div class="lienzo"><svg viewBox="0 0 960 400" style="min-width:740px;font-variant-ligatures:none" role="img" aria-label="Cuatro formas de indexar el vector dur de seis viajes: por posición, por posición negativa, por nombre y por condición, con el resultado de cada una"><defs><marker id="c2d3-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="fl-muted"/></marker></defs>
+<text x="16" y="24" class="t t-xs t-b t-m">EL VECTOR dur (CON NOMBRES = ESTACIÓN DE ORIGEN)</text>
+<rect x="200" y="36" width="76" height="44" rx="6" class="c-red"/><text x="238.0" y="56" text-anchor="middle" class="t t-b t-mono">12.8</text><text x="238.0" y="73" text-anchor="middle" class="t t-xs t-m t-mono">"E04"</text><text x="238.0" y="96" text-anchor="middle" class="t t-xs t-m">[1]</text>
+<rect x="284" y="36" width="76" height="44" rx="6" class="c-red"/><text x="322.0" y="56" text-anchor="middle" class="t t-b t-mono">32.9</text><text x="322.0" y="73" text-anchor="middle" class="t t-xs t-m t-mono">"E10"</text><text x="322.0" y="96" text-anchor="middle" class="t t-xs t-m">[2]</text>
+<rect x="368" y="36" width="76" height="44" rx="6" class="c-red"/><text x="406.0" y="56" text-anchor="middle" class="t t-b t-mono">16.5</text><text x="406.0" y="73" text-anchor="middle" class="t t-xs t-m t-mono">"E22"</text><text x="406.0" y="96" text-anchor="middle" class="t t-xs t-m">[3]</text>
+<rect x="452" y="36" width="76" height="44" rx="6" class="c-red"/><text x="490.0" y="56" text-anchor="middle" class="t t-b t-mono">-51.4</text><text x="490.0" y="73" text-anchor="middle" class="t t-xs t-m t-mono">"E01"</text><text x="490.0" y="96" text-anchor="middle" class="t t-xs t-m">[4]</text>
+<rect x="536" y="36" width="76" height="44" rx="6" class="c-red"/><text x="574.0" y="56" text-anchor="middle" class="t t-b t-mono">31.4</text><text x="574.0" y="73" text-anchor="middle" class="t t-xs t-m t-mono">"E02"</text><text x="574.0" y="96" text-anchor="middle" class="t t-xs t-m">[5]</text>
+<rect x="620" y="36" width="76" height="44" rx="6" class="caja" style="stroke-dasharray:4 3"/><text x="658.0" y="56" text-anchor="middle" class="t t-b t-mono k-warm">NA</text><text x="658.0" y="73" text-anchor="middle" class="t t-xs t-m t-mono">"E14"</text><text x="658.0" y="96" text-anchor="middle" class="t t-xs t-m">[6]</text>
+<text x="16" y="138" class="t t-s t-b">Por posición</text><text x="16" y="156" class="t t-s t-mono">dur[c(2, 5)]</text>
+<rect x="200" y="124" width="76" height="36" rx="6" class="caja apagado"/>
+<rect x="284" y="124" width="76" height="36" rx="6" class="c-red"/><text x="322.0" y="147" text-anchor="middle" class="t t-s">✓</text>
+<rect x="368" y="124" width="76" height="36" rx="6" class="caja apagado"/>
+<rect x="452" y="124" width="76" height="36" rx="6" class="caja apagado"/>
+<rect x="536" y="124" width="76" height="36" rx="6" class="c-red"/><text x="574.0" y="147" text-anchor="middle" class="t t-s">✓</text>
+<rect x="620" y="124" width="76" height="36" rx="6" class="caja apagado"/>
+<path d="M702 142H722" class="ln" marker-end="url(#c2d3-m)"/>
+<text x="730" y="138" class="t t-s t-mono">[1] 32.9 31.4</text>
+<text x="730" y="156" class="t t-xs t-m">el primero es el 1</text>
+<text x="16" y="204" class="t t-s t-b">Posición negativa</text><text x="16" y="222" class="t t-s t-mono">dur[-4]</text>
+<rect x="200" y="190" width="76" height="36" rx="6" class="c-red"/><text x="238.0" y="213" text-anchor="middle" class="t t-s">✓</text>
+<rect x="284" y="190" width="76" height="36" rx="6" class="c-red"/><text x="322.0" y="213" text-anchor="middle" class="t t-s">✓</text>
+<rect x="368" y="190" width="76" height="36" rx="6" class="c-red"/><text x="406.0" y="213" text-anchor="middle" class="t t-s">✓</text>
+<rect x="452" y="190" width="76" height="36" rx="6" class="caja apagado"/>
+<rect x="536" y="190" width="76" height="36" rx="6" class="c-red"/><text x="574.0" y="213" text-anchor="middle" class="t t-s">✓</text>
+<rect x="620" y="190" width="76" height="36" rx="6" class="c-red"/><text x="658.0" y="213" text-anchor="middle" class="t t-s">✓</text>
+<path d="M702 208H722" class="ln" marker-end="url(#c2d3-m)"/>
+<text x="730" y="204" class="t t-s t-mono">[1] 12.8 32.9 16.5 31.4 NA</text>
+<text x="730" y="222" class="t t-xs t-m">quita el 4</text>
+<text x="16" y="270" class="t t-s t-b">Por nombre</text><text x="16" y="288" class="t t-s t-mono">dur["E10"]</text>
+<rect x="200" y="256" width="76" height="36" rx="6" class="caja apagado"/>
+<rect x="284" y="256" width="76" height="36" rx="6" class="c-red"/><text x="322.0" y="279" text-anchor="middle" class="t t-s">✓</text>
+<rect x="368" y="256" width="76" height="36" rx="6" class="caja apagado"/>
+<rect x="452" y="256" width="76" height="36" rx="6" class="caja apagado"/>
+<rect x="536" y="256" width="76" height="36" rx="6" class="caja apagado"/>
+<rect x="620" y="256" width="76" height="36" rx="6" class="caja apagado"/>
+<path d="M702 274H722" class="ln" marker-end="url(#c2d3-m)"/>
+<text x="730" y="270" class="t t-s t-mono"> E10 </text>
+<text x="730" y="285" class="t t-s t-mono">32.9</text>
+<text x="730" y="300" class="t t-xs t-m">conserva el nombre</text>
+<text x="16" y="336" class="t t-s t-b">Por condición</text><text x="16" y="354" class="t t-s t-mono">dur[dur > 20]</text>
+<rect x="200" y="322" width="76" height="36" rx="6" class="caja"/><text x="238.0" y="345" text-anchor="middle" class="t t-s t-mono">FALSE</text>
+<rect x="284" y="322" width="76" height="36" rx="6" class="c-apl"/><text x="322.0" y="345" text-anchor="middle" class="t t-s t-mono">TRUE</text>
+<rect x="368" y="322" width="76" height="36" rx="6" class="caja"/><text x="406.0" y="345" text-anchor="middle" class="t t-s t-mono">FALSE</text>
+<rect x="452" y="322" width="76" height="36" rx="6" class="caja"/><text x="490.0" y="345" text-anchor="middle" class="t t-s t-mono">FALSE</text>
+<rect x="536" y="322" width="76" height="36" rx="6" class="c-apl"/><text x="574.0" y="345" text-anchor="middle" class="t t-s t-mono">TRUE</text>
+<rect x="620" y="322" width="76" height="36" rx="6" class="caja" style="stroke:var(--warm);stroke-dasharray:4 3"/><text x="658.0" y="345" text-anchor="middle" class="t t-s t-mono k-warm">NA</text>
+<path d="M702 340H722" class="ln" marker-end="url(#c2d3-m)"/>
+<text x="730" y="336" class="t t-s t-mono">[1] 32.9 31.4 NA</text>
+<text x="730" y="354" class="t t-xs t-m">el NA no se sabe</text>
+<text x="16" y="390" class="t t-s t-m">En la fila de la condición, el TRUE marca lo que se queda; el NA de la comparación produce un NA en el resultado.</text></svg></div><figcaption><b>Cuatro formas de indexar el mismo vector.</b> Arriba, <code>dur</code> con seis duraciones, cada una con su nombre (la estación de origen) y su posición entre corchetes; la última es <code>NA</code>, con borde punteado. Cada fila muestra una forma de indexar, qué casillas elige (en azul, las demás atenuadas) y lo que imprime R a la derecha. En la última fila, la de la condición, se ve la máscara: <code>TRUE</code> donde se cumple y <code>NA</code> donde no se sabe. Ese <code>NA</code> pasa al resultado: la condición no puede decir si un dato faltante es mayor que 20.</figcaption></figure><div class="prose"><p>Fíjate en esa última fila. Un <code>NA</code> en la máscara produce un <code>NA</code> en el resultado, porque R no puede decidir si ese elemento se queda. Si quieres solo los que cumplen con seguridad, combina la condición con <code>!is.na(dur)</code> o usa <code>which()</code>.</p></div><div class="lab" id="02-lab-2"><div class="lab-title"><span class="tag">Laboratorio</span><h3>Indexación lógica: escribe una condición y mira qué elementos quedan</h3></div><p class="hint">Dieciséis viajes de la muestra de RiberaBici, guardados en cinco vectores del mismo largo: <code>dur</code>, <code>usuario</code>, <code>tipo</code>, <code>origen</code> y <code>destino</code>. Elige una condición de ejemplo y mira la máscara (TRUE, FALSE o NA) bajo cada viaje y lo que devuelve <code>dur[…]</code>. Pulsa «Cargar R» para escribir tus propias condiciones, por ejemplo <code>tipo == "eléctrica" | dur &gt; 60</code>.</p><style>
+[id="02-lab-2"] pre,[id="02-lab-2"] textarea,[id="02-lab-2"] code,[id="02-lab-2"] input,[id="02-lab-2"] .c3l2-cab{font-variant-ligatures:none!important}
+[id="02-lab-2"] .c2l2-rot{font:700 .7rem var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+[id="02-lab-2"] .btns{align-items:center}
+[id="02-lab-2"] .c2l2-estado{font:500 .85rem var(--f-display);color:var(--muted)}
+[id="02-lab-2"] .c2l2-estado.ok{color:var(--good)} [id="02-lab-2"] .c2l2-estado.warn{color:var(--warm)}
+[id="02-lab-2"] .opciones{grid-template-columns:minmax(0,1fr);max-width:560px}
+[id="02-lab-2"] .c2l2-cond{display:flex;align-items:center;gap:4px;border:1px solid var(--line);border-left:5px solid var(--c-red);border-radius:6px;background:var(--card);padding:6px 8px;font:600 .9rem var(--f-mono)}
+[id="02-lab-2"] .c2l2-cond input{flex:1;min-width:0;font:.88rem var(--f-mono);border:0;background:transparent;color:var(--ink);padding:4px 2px}
+[id="02-lab-2"] .c2l2-cond input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[id="02-lab-2"] .c2l2-viajes{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px}
+[id="02-lab-2"] .c2l2-v{border:1.5px solid var(--line);border-radius:8px;padding:5px 6px;background:var(--card);font-size:.74rem;line-height:1.3;transition:opacity .2s}
+[id="02-lab-2"] .c2l2-v .c2l2-i{font:700 .64rem var(--f-display);color:var(--muted)}
+[id="02-lab-2"] .c2l2-v .c2l2-d{display:block;font:700 .95rem var(--f-mono)}
+[id="02-lab-2"] .c2l2-v .c2l2-m{display:block;margin-top:3px;font:700 .7rem var(--f-mono);border-radius:4px;text-align:center;padding:1px 0;background:var(--paper)}
+[id="02-lab-2"] .c2l2-v.si{border-color:var(--good);background:var(--good-soft)}
+[id="02-lab-2"] .c2l2-v.si .c2l2-m{background:var(--good);color:var(--card)}
+[id="02-lab-2"] .c2l2-v.no{opacity:.45}
+[id="02-lab-2"] .c2l2-v.na{border-color:var(--warm);border-style:dashed}
+[id="02-lab-2"] .c2l2-v.na .c2l2-m{background:var(--warm-soft);color:var(--warm)}
+[id="02-lab-2"] .c2l2-sello{font:700 .66rem var(--f-display);letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:var(--mark);color:var(--ink)}
+[id="02-lab-2"] pre.c2l2-salida{margin:0;font:.8rem/1.5 var(--f-mono);white-space:pre-wrap;overflow-wrap:anywhere;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+[id="02-lab-2"] .c2l2-err{color:var(--warm)}
+@media (prefers-reduced-motion: reduce){[id="02-lab-2"] .c2l2-v{transition:none}}
+</style>
+<div class="opciones"><label>Condición de ejemplo
+  <select id="c2l2-ej"></select></label></div>
+<div class="c2l2-cond"><span aria-hidden="true">dur[</span><input id="c2l2-in" aria-label="Condición dentro de los corchetes" spellcheck="false" autocapitalize="off" autocomplete="off"><span aria-hidden="true">]</span></div>
+<div class="btns">
+  <button type="button" class="primary" id="c2l2-cargar">Cargar R (unos 25 MB · tarda unos segundos)</button>
+  <button type="button" id="c2l2-run" disabled>Probar la condición (Enter)</button>
+  <span class="c2l2-estado" id="c2l2-estado" aria-live="polite">R sin cargar · los ejemplos muestran su resultado guardado</span>
+</div>
+<div><span class="c2l2-rot">16 viajes de la muestra</span> <span class="c2l2-sello" id="c2l2-sello">guardado</span></div>
+<div class="c2l2-viajes" id="c2l2-viajes" aria-hidden="true"></div>
+<pre class="c2l2-salida" id="c2l2-salida" aria-label="Lo que imprime R"></pre>
+<div class="readout texto" id="c2l2-out" aria-live="polite"></div></div><div class="ml"><b>En la práctica</b><p><b>Una pregunta con corchetes.</b> Gabriela encontró 265 duraciones negativas. Con una sola línea (las posiciones de <code>which(dur &lt; 0)</code> usadas como índice de la columna de destino, y <code>table()</code> para contarlas) vio que todas terminan en E17 Embarcadero, y con otra, aplicando <code>range()</code> a sus fechas de inicio, que todas son de la primera quincena de mayo. Le escribe a Ignacio, de sistemas, y la respuesta llega en diez minutos: «El reloj del anclaje de E17 se atrasó una hora el 4 de mayo y lo corregimos el 18». No hay que borrar esos viajes: hay que sumarles una hora al fin. Sin indexación lógica, encontrarlos habría tomado una tarde de filtros en la hoja de cálculo.</p></div></section>
+<section><h2>Vectorización y reciclaje</h2><div class="prose"><p>Una operación <b>vectorizada</b> (<i>vectorized</i>) se aplica a todos los elementos de un vector sin que escribas un bucle. <code>dur * 60</code> multiplica las 72.283 duraciones; <code>dur &gt; 20</code> compara las 72.283; <code>sqrt(x)</code>, <code>log(x)</code>, <code>round(x, 1)</code> y <code>paste("E", 1:24)</code> trabajan elemento por elemento y devuelven un vector del mismo largo. Casi todo R base está escrito así.</p></div><div class="analogia"><b>Imagínalo así</b><p>Un sello de goma imprime una fecha en un papel por golpe. Una imprenta imprime la misma fecha en mil hojas de una pasada. En los dos casos el resultado es igual, pero con la imprenta no repites el gesto mil veces. Un bucle es el sello; una operación vectorizada es la imprenta.</p></div><div class="prose"><p>La vectorización tiene dos ventajas. La primera es de lectura: <code>minutos &lt;- segundos / 60</code> dice exactamente lo que hace, sin la maquinaria de un bucle (un contador, un vector vacío que se va llenando, un índice). La segunda es de velocidad: un bucle en R hace un trámite en cada vuelta (averiguar qué tipo tiene el elemento, buscar la operación, guardar el resultado), mientras que la operación vectorizada entrega el vector completo a una función escrita en C que lo recorre de corrido. En vectores grandes, la diferencia es de decenas a cientos de veces.</p></div><figure class="fig fig-comparacion" id="02-diagrama-4"><div class="lienzo"><svg viewBox="0 0 960 330" style="min-width:740px;font-variant-ligatures:none" role="img" aria-label="A la izquierda, un bucle de R que recorre 72.283 duraciones una por una, decidiendo en cada vuelta qué hacer; a la derecha, la operación vectorizada que entrega el vector completo a una función compilada en C que recorre la memoria de corrido">
+<defs><marker id="c2d4-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="fl-muted"/></marker><marker id="c2d4-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="k-red"/></marker></defs>
+<text x="16" y="24" class="t t-xs t-b k-warm">ELEMENTO POR ELEMENTO (BUCLE EN R)</text>
+<rect x="16" y="36" width="440" height="56" rx="8" class="caja"/>
+<text x="28" y="58" class="t t-s t-mono">for (i in seq_along(s))</text>
+<text x="28" y="78" class="t t-s t-mono">  m[i] &lt;- s[i] / 60</text>
+<g>
+<rect x="16" y="110" width="440" height="34" rx="6" class="caja"/>
+<text x="28" y="132" class="t t-s">vuelta 1: ¿qué es s[1]? ¿un número? buscar «/» · dividir · guardar</text>
+<rect x="16" y="150" width="440" height="34" rx="6" class="caja"/>
+<text x="28" y="172" class="t t-s">vuelta 2: ¿qué es s[2]? ¿un número? buscar «/» · dividir · guardar</text>
+<rect x="16" y="190" width="440" height="34" rx="6" class="caja apagado"/>
+<text x="28" y="212" class="t t-s t-m">… 72.280 vueltas más, cada una con su trámite</text>
+</g>
+<text x="16" y="256" class="t t-s">El intérprete de R repite el trámite en cada vuelta.</text>
+<text x="504" y="24" class="t t-xs t-b k-red">TODO EL VECTOR A LA VEZ (VECTORIZADO)</text>
+<rect x="504" y="36" width="440" height="56" rx="8" class="c-red"/>
+<text x="516" y="70" class="t t-mono t-b">m &lt;- s / 60</text>
+<rect x="504" y="110" width="440" height="114" rx="8" class="c-red"/>
+<text x="516" y="132" class="t t-s t-b">una sola llamada a código compilado (C)</text>
+<g><rect x="516" y="146" width="22" height="22" rx="3" class="caja"/><rect x="542" y="146" width="22" height="22" rx="3" class="caja"/><rect x="568" y="146" width="22" height="22" rx="3" class="caja"/><rect x="594" y="146" width="22" height="22" rx="3" class="caja"/><rect x="620" y="146" width="22" height="22" rx="3" class="caja"/><rect x="646" y="146" width="22" height="22" rx="3" class="caja"/><rect x="672" y="146" width="22" height="22" rx="3" class="caja"/><rect x="698" y="146" width="22" height="22" rx="3" class="caja"/><rect x="724" y="146" width="22" height="22" rx="3" class="caja"/><rect x="750" y="146" width="22" height="22" rx="3" class="caja"/><rect x="776" y="146" width="22" height="22" rx="3" class="caja"/><rect x="802" y="146" width="22" height="22" rx="3" class="caja"/><rect x="828" y="146" width="22" height="22" rx="3" class="caja"/><rect x="854" y="146" width="22" height="22" rx="3" class="caja"/><rect x="880" y="146" width="22" height="22" rx="3" class="caja"/><rect x="906" y="146" width="22" height="22" rx="3" class="caja"/></g>
+<path d="M516 182H930" class="ln s-red" style="stroke-width:2" marker-end="url(#c2d4-r)"/>
+<text x="516" y="210" class="t t-s">recorre la memoria de corrido: el tipo se revisa una vez</text>
+<text x="504" y="256" class="t t-s">Mismo resultado: identical(a, b) es TRUE.</text>
+<rect x="16" y="272" width="928" height="44" rx="8" class="d-casa"/>
+<text x="28" y="299" class="t t-s">En la práctica del capítulo: 20 veces sobre 72.283 duraciones. El bucle tarda segundos en webR y décimas en R local; el vector, milésimas.</text>
+</svg></div><figcaption><b>El mismo cálculo, elemento por elemento y de una vez.</b> A la izquierda, un bucle <code>for</code> que divide cada duración entre 60: cada vuelta repite el trámite del intérprete de R (qué es el elemento, qué operación toca, dónde se guarda), 72.283 veces. A la derecha, la versión vectorizada, <code>s / 60</code>: una sola llamada a código compilado que recorre la memoria de corrido y revisa el tipo una vez. Abajo, el resultado de la práctica del capítulo: los dos dan exactamente lo mismo, pero el bucle es mucho más lento.</figcaption></figure><div class="prose"><p>¿Qué pasa si operas dos vectores de distinto largo? R aplica el <b>reciclaje</b> (<i>recycling</i>): repite el vector corto hasta alcanzar el largo del largo. <code>c(10, 20, 30, 40) + c(1, 2)</code> da <code>11 22 31 42</code>: el <code>c(1, 2)</code> se usó dos veces. Es lo que pasa, sin que lo notes, cada vez que operas un vector con un solo número: en <code>dur * 60</code>, el 60 es un vector de largo uno que se recicla 72.283 veces.</p><p>Si el largo mayor no es múltiplo del menor, R calcula igual, pero avisa: <code>c(10, 20, 30) + c(1, 2)</code> da <code>11 22 31</code> con el aviso <i>longer object length is not a multiple of shorter object length</i> (el largo del objeto mayor no es múltiplo del menor). Ese aviso casi siempre señala un error: dos columnas que deberían tener el mismo largo y no lo tienen. Los paquetes del tidyverse (capítulo 05) son más estrictos: solo reciclan vectores de largo uno y, en otro caso, dan error.</p></div><div class="lab" id="02-lab-1"><div class="lab-title"><span class="tag">Laboratorio</span><h3>El reciclaje visualizado: suma dos vectores de distinto largo y mira cómo se repite el corto</h3></div><p class="hint">Mueve los deslizadores para cambiar el largo de <code>a</code> y de <code>b</code>, y elige la operación. Las casillas punteadas son las copias recicladas del vector corto. Pulsa «Recorrer par por par» para ver qué elemento se opera con cuál. Prueba un largo que no divida al otro y mira el aviso de R.</p><style>
+[id="02-lab-1"] pre,[id="02-lab-1"] textarea,[id="02-lab-1"] code,[id="02-lab-1"] input,[id="02-lab-1"] .c3l2-cab{font-variant-ligatures:none!important}
+[id="02-lab-1"] .c2l1-rot{font:700 .7rem var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+[id="02-lab-1"] .btns{align-items:center}
+[id="02-lab-1"] .c2l1-fila{display:grid;grid-template-columns:5.2em minmax(0,1fr);gap:8px;align-items:center;margin:4px 0}
+[id="02-lab-1"] .c2l1-celdas{display:flex;flex-wrap:wrap;gap:4px}
+[id="02-lab-1"] .c2l1-c{min-width:2.9em;padding:6px 4px;text-align:center;border-radius:6px;font:600 .86rem var(--f-mono);border:1.5px solid var(--line);background:var(--card);transition:background .2s,border-color .2s}
+[id="02-lab-1"] .c2l1-a{border-color:var(--c-red);background:var(--c-red-s)}
+[id="02-lab-1"] .c2l1-b{border-color:var(--c-fis);background:var(--c-fis-s)}
+[id="02-lab-1"] .c2l1-b.c2l1-rec{border-style:dashed;opacity:.75}
+[id="02-lab-1"] .c2l1-r{border-color:var(--good);background:var(--good-soft)}
+[id="02-lab-1"] .c2l1-c.c2l1-luz{outline:3px solid var(--accent);outline-offset:1px}
+[id="02-lab-1"] .c2l1-c small{display:block;font:500 .62rem var(--f-display);color:var(--muted)}
+[id="02-lab-1"] pre.c2l1-r-cod{margin:0;font:.8rem/1.5 var(--f-mono);white-space:pre-wrap;overflow-wrap:anywhere;background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--c-red);border-radius:6px;padding:6px 8px}
+[id="02-lab-1"] .c2l1-warn{color:var(--warm)}
+@media (prefers-reduced-motion: reduce){[id="02-lab-1"] .c2l1-c{transition:none}}
+</style>
+<div class="btns" role="group" aria-label="Casos"><span class="c2l1-rot">Casos</span>
+  <button type="button" data-caso="esc" aria-pressed="false">Un número</button>
+  <button type="button" data-caso="mitad" aria-pressed="true">La mitad del largo</button>
+  <button type="button" data-caso="no" aria-pressed="false">Un largo que no divide</button>
+  <button type="button" data-caso="igual" aria-pressed="false">El mismo largo</button>
+</div>
+<div class="ctls">
+  <div class="ctl"><label for="c2l1-na">Largo de <code>a</code></label><input type="range" id="c2l1-na" min="1" max="8" value="6"><output id="c2l1-ona">6</output></div>
+  <div class="ctl"><label for="c2l1-nb">Largo de <code>b</code></label><input type="range" id="c2l1-nb" min="1" max="8" value="3"><output id="c2l1-onb">3</output></div>
+</div>
+<div class="opciones"><label>Operación
+  <select id="c2l1-op"><option value="+">a + b (sumar)</option><option value="*">a * b (multiplicar)</option><option value=">">a &gt; b (comparar)</option></select></label></div>
+<div aria-hidden="true">
+  <div class="c2l1-fila"><span class="c2l1-rot">a</span><div class="c2l1-celdas" id="c2l1-fa"></div></div>
+  <div class="c2l1-fila"><span class="c2l1-rot">b reciclado</span><div class="c2l1-celdas" id="c2l1-fb"></div></div>
+  <div class="c2l1-fila"><span class="c2l1-rot">resultado</span><div class="c2l1-celdas" id="c2l1-fr"></div></div>
+</div>
+<div class="btns"><button type="button" id="c2l1-paso">Recorrer par por par</button></div>
+<pre class="c2l1-r-cod" id="c2l1-cod" aria-label="El código y lo que responde R"></pre>
+<div class="readout texto" id="c2l1-out" aria-live="polite"></div></div><div class="prose"><p>Para las decisiones elemento por elemento, R tiene <code>ifelse(condicion, si, no)</code>, que también es vectorizada: <code>ifelse(dur &gt; 20, "largo", "corto")</code> etiqueta cada viaje sin bucle. Los bucles no están prohibidos en R, y el capítulo 04 los trata con cuidado: son la herramienta correcta cuando cada paso depende del anterior, o cuando cada vuelta hace algo grande, como leer un archivo. Pero para operar sobre los elementos de un vector, la forma de R es pensar en el vector completo.</p></div><div class="practica"><div class="practica-title"><span class="tag">En la terminal</span><h3>El mismo cálculo con un bucle y vectorizado</h3></div><p>Vas a medir cuánto tarda pasar 72.283 duraciones de segundos a minutos con un bucle y con una división, y a ver el reciclaje con sus propios ojos. Guarda este guion como <code>cap02b.R</code> en la carpeta <code>bicis</code>:</p><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln"># cap02b.R: el mismo cálculo con un bucle y vectorizado</span>
+<span class="ln">viajes &lt;- read.csv("datos/viajes.csv", na.strings = "")</span>
+<span class="ln">segundos &lt;- as.numeric(as.POSIXct(viajes$fin, tz = "UTC") - as.POSIXct(viajes$inicio, tz = "UTC"), units = "secs")</span>
+<span class="ln"></span>
+<span class="ln">con_bucle &lt;- function(s) {</span>
+<span class="ln">  m &lt;- numeric(length(s))</span>
+<span class="ln">  for (i in seq_along(s)) m[i] &lt;- s[i] / 60</span>
+<span class="ln">  m</span>
+<span class="ln">}</span>
+<span class="ln">system.time(for (k in 1:20) a &lt;- con_bucle(segundos))</span>
+<span class="ln">system.time(for (k in 1:20) b &lt;- segundos / 60)</span>
+<span class="ln">identical(a, b)</span>
+<span class="ln"></span>
+<span class="ln"># Reciclaje: un vector corto se repite</span>
+<span class="ln">c(10, 20, 30, 40) + c(1, 2)</span>
+<span class="ln">c(10, 20, 30) + c(1, 2)</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><ol class="steps"><li><span>Córrelo con eco:</span></li></ol><div class="cmds"><div class="cmd-panel" data-so="win mac linux"><div class="cmd-l"><code>source("cap02b.R", echo = TRUE)</code><button type="button" class="copiar">Copiar</button></div></div></div><ol class="steps" start="2" style="counter-reset:st 1"><li><span>Compara la columna <code>elapsed</code> (tiempo transcurrido, en segundos) de los dos <code>system.time()</code>.</span></li><li><span>Mira el resultado de <code>identical(a, b)</code>.</span></li><li><span>Mira las dos sumas del final y el aviso de la segunda.</span></li></ol><p><b>Qué observar:</b> cada <code>system.time()</code> repite el cálculo 20 veces para que el tiempo se pueda medir. El bucle tarda décimas de segundo en un equipo normal (en webR, el R del navegador, tardó más de 5 segundos) y la división, unas pocas milésimas: decenas o cientos de veces menos, según el equipo. <code>identical(a, b)</code> es <code>TRUE</code>: el resultado es exactamente el mismo, incluidos los 160 <code>NA</code>. La primera suma da <code>11 22 31 42</code> sin aviso; la segunda da <code>11 22 31</code> y avisa que 3 no es múltiplo de 2.</p></div></section>
+<section><h2>La idea clave</h2><div class="prose"><p>En R todo es un vector: una secuencia de valores del mismo tipo (lógico, entero, doble o texto), y hasta un número suelto es un vector de largo uno. Cuando mezclas tipos, R sube por la escalera lógico → entero → doble → texto sin avisar; cuando conviertes tú con <code>as.*()</code>, cuenta los <code>NA</code>. Los faltantes (<code>NA</code>) se contagian y se buscan con <code>is.na()</code>. Los corchetes eligen por posición (desde 1), por nombre o por condición, y las operaciones se aplican al vector completo, reciclando el corto. Pensar en vectores completos, y no elemento por elemento, es la primera costumbre de quien programa bien en R.</p></div></section>
+<section><h2>Pruébate</h2><div class="quiz"><h3>Pruébate</h3><details><summary>¿Qué tipo tiene el vector <code>c(1L, 2.5, TRUE)</code> y por qué?</summary><p>Doble (<i>double</i>): R sube al tipo más general que puede guardar a todos; el <code>TRUE</code> pasa a 1 y el entero 1 a 1,0.</p></details><details><summary>¿Por qué <code>mean(dur)</code> devuelve <code>NA</code> si falta una sola duración, y cómo se evita?</summary><p>Porque el <code>NA</code> se contagia: un promedio con un valor desconocido es desconocido. Se evita con <code>mean(dur, na.rm = TRUE)</code>.</p></details><details><summary>¿Qué devuelve <code>dur[-1]</code>? ¿Y <code>dur[0]</code>?</summary><p><code>dur[-1]</code> devuelve todos los elementos menos el primero; <code>dur[0]</code> devuelve un vector vacío del mismo tipo.</p></details><details><summary>¿Por qué no sirve <code>x == NA</code> para encontrar los faltantes?</summary><p>Porque comparar con un valor desconocido da desconocido: devuelve <code>NA</code> en todas las posiciones. Se usa <code>is.na(x)</code>.</p></details><details><summary>¿Qué calcula <code>sum(dur &gt; 30, na.rm = TRUE)</code>?</summary><p>Cuántos viajes duran más de 30 minutos: la comparación da <code>TRUE</code> o <code>FALSE</code> y, al sumar, cada <code>TRUE</code> vale 1.</p></details><details><summary>¿Qué resultado da <code>1:6 * c(1, 10)</code> y por qué no hay aviso?</summary><p><code>1 20 3 40 5 60</code>: el vector corto se recicla tres veces, y como 6 es múltiplo de 2, R no avisa.</p></details></div></section>
+<section><h2>Para investigar</h2><div class="investiga"><h3>Para investigar</h3><p class="hint">Estas preguntas no se responden en el capítulo: búscalas por tu cuenta.</p><ol><li>¿Qué es la norma IEEE 754 y cuántos dígitos decimales exactos puede guardar un doble?<small>Pista: busca «doble precisión IEEE 754 dígitos significativos».</small></li><li>¿Cuál es el entero más grande que R puede guardar como <code>integer</code> y qué pasa si una suma lo supera?<small>Pista: prueba <code>.Machine$integer.max</code> en tu consola.</small></li><li>¿Qué son los vectores de tipo complejo (<i>complex</i>) y crudo (<i>raw</i>), y en qué tipo de trabajo se usan?</li><li>¿Qué es ALTREP y por qué en R moderno <code>x &lt;- 1:1e9</code> se crea al instante, sin ocupar los gigabytes que ocuparían mil millones de números?<small>Pista: busca «ALTREP R alternative representation».</small></li><li>¿Por qué R, MATLAB, Julia y Fortran cuentan desde 1, mientras que C, Python y JavaScript cuentan desde 0?</li></ol></div></section>
+<section><h2>Para saber más</h2><div class="vids"><span>Para saber más</span><a class="vid" href="https://adv-r.hadley.nz/vectors-chap.html" target="_blank" rel="noopener">Vectors, en Advanced R <small>los vectores atómicos a fondo, de Hadley Wickham, en inglés</small></a><a class="vid" href="https://r4ds.hadley.nz/logicals.html" target="_blank" rel="noopener">Logical vectors, en R for Data Science <small>comparaciones, NA y lógica booleana, en inglés</small></a><a class="vid" href="https://cran.r-project.org/doc/manuals/r-release/R-intro.html" target="_blank" rel="noopener">An Introduction to R <small>el manual oficial de R, capítulos 2 y 3, en inglés</small></a><a class="vid" href="https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-1044-7" target="_blank" rel="noopener">Gene name errors are widespread in the scientific literature <small>el estudio de 2016 sobre los genes convertidos en fechas, en inglés</small></a></div></section>
+<label class="got"><input type="checkbox" id="got"> Lo tengo claro</label>
+<nav class="pager" id="pager" aria-label="Capítulo anterior y siguiente"></nav>
+</main>
+</div>
+<footer><span>Curso abierto de aaramirez.github.io.</span><span>Sitio publicado: <a href="https://github.com/aaramirez/programacion-r" target="_blank" rel="noopener">github.com/aaramirez/programacion-r</a></span></footer>
+</div>
+<script src="assets/lab.js"></script>
+<script>
+(function(){
+  const {$}=window.Lab;
+  const raiz=document.querySelector('[id="02-lab-3"]');
+  const LIT={lg:'TRUE',en:'2008L',db:'18.65',tx:'"E06"',na:'NA'};
+  const ORDEN=['lg','en','db','tx'];
+  const NOM={lg:'logical',en:'integer',db:'double',tx:'character'};
+  let v=['lg','en','db'];
+  const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  function como(e,t){ // valor de un elemento convertido al tipo t, como lo imprime R
+    if(e==='na')return 'NA';
+    const val={lg:{lg:'TRUE',en:'1',db:'1',tx:'"TRUE"'},en:{en:'2008',db:'2008',tx:'"2008"'},db:{db:'18.65',tx:'"18.65"'},tx:{tx:'"E06"'}};
+    return val[e][t];
+  }
+  function pintar(){
+    const tipos=v.filter(e=>e!=='na');
+    const t=tipos.length?ORDEN[Math.max(...tipos.map(e=>ORDEN.indexOf(e)))]:'lg';
+    ORDEN.forEach(k=>$('#c2l3-'+k).classList.toggle('on',k===t&&v.length>0));
+    let vals=v.map(e=>como(e,t));
+    if(t==='db'){ // R imprime los dobles con los mismos decimales
+      const dec=Math.max(0,...vals.filter(x=>x!=='NA').map(x=>(x.split('.')[1]||'').length));
+      vals=vals.map(x=>x==='NA'?x:Number(x).toFixed(dec));
+    }
+    const w=Math.max(...vals.map(x=>x.length),1);
+    const linea=v.length?'[1] '+vals.map(x=>x.padStart(w)).join(' '):'NULL';
+    $('#c2l3-r').innerHTML='<span class="c2l3-in">&gt; x &lt;- c('+esc(v.map(e=>LIT[e]).join(', '))+')\n&gt; x</span>\n'+esc(linea)+'\n<span class="c2l3-in">&gt; typeof(x)</span>\n[1] "'+(v.length?NOM[t]:'NULL')+'"';
+    const exp={lg:'Solo valores lógicos: el vector es lógico.',en:'El TRUE se volvió 1 y el vector es entero: un lógico cabe en un entero sin perder nada.',
+      db:'Todo se volvió doble. Un entero o un lógico caben en un doble sin perder información.',tx:'Con un solo texto, todo se vuelve texto: <code>TRUE</code> pasa a ser <code>"TRUE"</code> y 18.65 pasa a ser <code>"18.65"</code>. Ya no puedes sumar ese vector.'};
+    $('#c2l3-out').innerHTML=v.length?'<span class="big">c() eligió el tipo '+NOM[t]+'</span><span>'+exp[t]+(v.includes('na')?' El <code>NA</code> se adapta: hay un NA para cada tipo.':'')+'</span><span>Regla: R sube por la escalera lógico → entero → doble → texto hasta el tipo que pueda guardar a todos, porque un vector atómico tiene un solo tipo.</span>':
+      '<span class="big">El vector está vacío</span><span>Un <code>c()</code> sin nada devuelve <code>NULL</code>, la ausencia de vector.</span>';
+  }
+  const EXP=[['[1] 3','as.integer corta los decimales, no redondea: 3,9 pasa a 3.'],
+    ['[1] 18.65','El texto se convierte en número porque usa punto decimal, como el código de R.'],
+    ['[1] NA','<span class="c2l3-w">Warning message:\nNAs introduced by coercion</span>','Con coma decimal R no reconoce el número: devuelve NA y avisa. Es el error típico al leer datos escritos en español.'],
+    ['[1] TRUE TRUE   NA','R entiende "TRUE", "true", "T" y "F", pero no "sí": lo que no reconoce pasa a NA, aquí sin aviso.'],
+    ['[1] 1 0 1','TRUE vale 1 y FALSE vale 0.'],
+    ['[1] "0.333333333333333"','Al pasar a texto, el doble se escribe con muchas cifras: el texto ya no es un número, aunque lo parezca.'],
+    ['[1] 2','La comparación da TRUE, TRUE, FALSE y sum los cuenta como 1 + 1 + 0: así se cuentan los viajes que cumplen una condición.']];
+  function pintarExp(){const i=+$('#c2l3-exp').value,e=EXP[i],src=$('#c2l3-exp').selectedOptions[0].textContent;
+    const warn=e.length===3?e[1]:'';const txt=e[e.length-1];
+    $('#c2l3-e').innerHTML='<span class="c2l3-in">&gt; '+esc(src)+'</span>\n'+e[0]+(warn?'\n'+warn:'')+'\n<span style="color:var(--muted)"># '+txt.replace(/<[^>]+>/g,'')+'</span>';}
+  raiz.querySelectorAll('[data-v]').forEach(b=>b.addEventListener('click',()=>{if(v.length<8)v.push(b.dataset.v);pintar();}));
+  $('#c2l3-borrar').addEventListener('click',()=>{v=[];pintar();});
+  $('#c2l3-exp').addEventListener('change',pintarExp);
+  pintar();pintarExp();
+})();
+</script>
+<script>
+(function(){
+  const {$}=window.Lab;
+  const raiz=document.querySelector('[id="02-lab-2"]');
+  /* ---- Componente webR común del curso «R y aplicaciones interactivas» (copiar tal cual) ----
+     webR 0.6.0 (R 4.6.0 compilado a WebAssembly). Se descarga solo al pulsar «Cargar R» y hay
+     UNA sola instancia por página (window.rWebR), compartida por todos los labs.
+     R.cargar(['dplyr'], aviso)  -> promesa con la instancia; instala los paquetes que falten
+     R.archivos(w, {'viajes.csv': texto})  -> escribe archivos en la carpeta de trabajo de R
+     R.correr(w, 'NN-lab-K', codigo, {ancho, alto})  -> {salida:[{tipo,texto}], imagenes, error}
+       tipo: 'codigo' (eco de cada expresión, con '> ' o '+ ' como en la consola), 'stdout' o 'stderr'
+       (errores «Error: …», avisos «Aviso: …» y mensajes). Sin {ancho, alto} no se capturan gráficos.
+       R se detiene en la primera expresión que falla, como source().
+     Cada lab corre en su propio entorno (sus variables no chocan con las de otro lab).
+     Las ejecuciones se ponen en fila: nunca corren dos a la vez. */
+  const R=window.rWebR||(window.rWebR=(function(){
+    const VER='0.6.0',BASE='https://webr.r-wasm.org/v'+VER+'/';
+    let base=null,cola=Promise.resolve(),n=0;const instalados={};
+    const enFila=f=>{const p=cola.then(f,f);cola=p.catch(()=>{});return p;};
+    const AYUDA=[
+      '.labs <- new.env()',
+      '.correr_lab <- function(id, archivo) {',
+      '  env <- .labs[[id]]',
+      '  if (is.null(env)) { env <- new.env(parent = globalenv()); assign(id, env, envir = .labs) }',
+      '  exprs <- tryCatch(parse(archivo, keep.source = TRUE, encoding = "UTF-8"), error = function(e) {',
+      '    cat("Error de sintaxis:", sub("^[^:]*:", "", conditionMessage(e)), "\\n", file = stderr()); NULL })',
+      '  if (is.null(exprs)) return(invisible(FALSE))',
+      '  ok <- TRUE',
+      '  withCallingHandlers(',
+      '    tryCatch(for (i in seq_along(exprs)) {',
+      '      l <- as.character(attr(exprs, "srcref")[[i]])',
+      '      cat(paste0(c("\\001", rep("\\002", length(l) - 1)), l), sep = "\\n")',
+      '      r <- withVisible(eval(exprs[[i]], env)); if (r$visible) print(r$value) },',
+      '      error = function(e) { ok <<- FALSE; cat("Error:", conditionMessage(e), "\\n", file = stderr()) }),',
+      '    warning = function(w) { cat("Aviso:", conditionMessage(w), "\\n", file = stderr()); invokeRestart("muffleWarning") },',
+      '    message = function(m) { cat(conditionMessage(m), file = stderr()); invokeRestart("muffleMessage") })',
+      '  invisible(ok)',
+      '}',
+      'options(width = 70)'].join('\n');
+    return {VER,
+      listo:()=>!!base,
+      /* paquetes: [] o ['dplyr','ggplot2']; aviso(texto) recibe el estado */
+      cargar(paquetes,aviso){
+        if(!base){aviso&&aviso('Descargando R (webR '+VER+')…');
+          base=(async()=>{const {WebR}=await import(BASE+'webr.mjs');
+            const w=new WebR({baseUrl:BASE});await w.init();await w.evalRVoid(AYUDA);return w;})();
+          base.catch(()=>{base=null;});}
+        return base.then(w=>enFila(async()=>{
+          const faltan=(paquetes||[]).filter(p=>!instalados[p]);
+          if(faltan.length){aviso&&aviso('Instalando '+faltan.join(' y ')+'…');
+            await w.installPackages(faltan,{quiet:true});faltan.forEach(p=>instalados[p]=1);}
+          return w;}));
+      },
+      /* archivos: {'viajes.csv': 'texto…'}; quedan en la carpeta de trabajo (/home/web_user) */
+      async archivos(w,archivos){for(const k in archivos)
+        await w.FS.writeFile('/home/web_user/'+k,new TextEncoder().encode(archivos[k]));},
+      /* graf: {ancho, alto} en píxeles CSS para capturar gráficos; sin graf no se capturan */
+      correr(w,lab,codigo,graf){return enFila(async()=>{
+        const f='/tmp/lab'+(++n)+'.R';
+        await w.FS.writeFile(f,new TextEncoder().encode(codigo));
+        const sh=await new w.Shelter();
+        try{
+          const r=await sh.captureR('.correr_lab('+JSON.stringify(lab)+', '+JSON.stringify(f)+')',{
+            withAutoprint:false,captureStreams:true,captureConditions:false,
+            captureGraphics:graf?{width:graf.ancho,height:graf.alto,bg:'white'}:false});
+          const salida=r.output.filter(o=>o.type==='stdout'||o.type==='stderr').map(o=>{const t=String(o.data);
+            return t[0]==='\x01'?{tipo:'codigo',texto:'> '+t.slice(1)}:t[0]==='\x02'?{tipo:'codigo',texto:'+ '+t.slice(1)}:{tipo:o.type,texto:t};});
+          const error=salida.some(o=>o.tipo==='stderr'&&/^Error/.test(o.texto));
+          return {salida,imagenes:r.images||[],error};
+        }catch(e){return {salida:[{tipo:'stderr',texto:'Error: '+(e.message||e)}],imagenes:[],error:true};}
+        finally{sh.purge();}
+      });}
+    };
+  })());
+  /* Dibuja las imágenes que devuelve R.correr dentro de un elemento (un canvas por gráfico) */
+  function pintarGraficos(el,imgs){
+    el.innerHTML='';
+    (imgs||[]).forEach(im=>{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;
+      c.style.cssText='width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:6px;background:#fff;margin-top:6px';
+      c.getContext('2d').drawImage(im,0,0);c.setAttribute('role','img');c.setAttribute('aria-label','Gráfico producido por R');el.appendChild(c);});
+  }
+  /* ---- fin del componente ---- */
+  const V={dur:[12.8,32.9,16.5,-51.4,31.4,null,32.0,6.7,28.4,22.4,22.6,7.2,81.3,5.6,13.4,13.1],
+    usuario:['abonado','abonado','abonado','ocasional','abonado','ocasional','abonado','abonado','ocasional','abonado','abonado','abonado','abonado','ocasional','abonado','abonado'],
+    tipo:['eléctrica','mecánica','mecánica','eléctrica','mecánica','mecánica','mecánica','mecánica','mecánica','mecánica','mecánica','mecánica','mecánica','mecánica','mecánica','mecánica'],
+    origen:['E04','E10','E22','E01','E02','E14','E19','E17','E24','E18','E01','E02','E23','E16','E02','E08'],
+    destino:['E18','E06','E16','E17','E22',null,'E17','E16','E03','E04','E08','E04','E11','E15','E15','E19']};
+  const rv=(a)=>'c('+a.map(x=>x===null?'NA':typeof x==='number'?String(x):'"'+x+'"').join(', ')+')';
+  const PREP=Object.keys(V).map(k=>k+' <- '+rv(V[k])).join('\n');
+  function codigo(cond){return PREP+'\nm <- ('+cond+')\n'+
+    'if (is.logical(m)) cat("MASCARA:", ifelse(is.na(rep_len(m, length(dur))), "NA", rep_len(m, length(dur))), "\\n") else cat("POSICIONES:", m, "\\n")\n'+
+    'dur[m]';}
+  const EJ={
+    mayor:{c:'dur > 20',x:'Una comparación con todo el vector devuelve 16 TRUE o FALSE, uno por viaje. Los corchetes se quedan con los TRUE. El viaje sin fin da <code>NA</code>: R no sabe si un dato faltante es mayor que 20, y ese <code>NA</code> aparece en el resultado.'},
+    ocas:{c:'usuario == "ocasional"',x:'La condición puede mirar otro vector del mismo largo: las posiciones coinciden porque cada vector es una columna de la misma tabla. Se usa <code>==</code> para comparar; un solo <code>=</code> sería una asignación.'},
+    y:{c:'dur > 20 & usuario == "abonado"',x:'<code>&amp;</code> (y) exige las dos condiciones; <code>|</code> (o) se conforma con una. Se combinan elemento por elemento, sin bucles. Fíjate en el NA: <code>NA &amp; FALSE</code> es FALSE, porque ya se sabe que no cumple.'},
+    lomas:{c:'destino %in% c("E10", "E11", "E12", "E13")',x:'<code>%in%</code> pregunta si cada elemento está en una lista: aquí, si el viaje termina en Las Lomas. A diferencia de <code>==</code>, <code>%in%</code> nunca devuelve NA: el destino faltante da FALSE.'},
+    falta:{c:'is.na(dur)',x:'<code>is.na</code> es la única forma segura de encontrar faltantes: <code>dur == NA</code> devuelve NA en todas las posiciones, porque comparar con lo desconocido da desconocido.'},
+    neg:{c:'dur < 0',x:'Una duración negativa no puede existir. Este viaje termina en E17 Embarcadero, la estación cuyo reloj se atrasó en mayo: la indexación lógica es la herramienta para encontrar rarezas.'},
+    validos:{c:'!is.na(dur) & dur >= 1',x:'<code>!</code> niega: «no es NA y dura al menos un minuto». Es el primer paso de la limpieza de RiberaBici, escrito como una sola condición sobre el vector completo.'},
+    which:{c:'which(dur > 30)',x:'<code>which</code> no devuelve TRUE y FALSE sino las <b>posiciones</b> de los TRUE (e ignora los NA). Los corchetes también aceptan posiciones: el resultado es el mismo que con la condición, pero sin el NA.'},
+    pos:{c:'c(1, 3, 5)',x:'Indexar por posición: el primer elemento es el 1, no el 0 como en Python o JavaScript. Prueba también <code>-c(1, 2)</code>: un número negativo quita esas posiciones.'}};
+  const GUARDADO={"mayor": {"salida": [{"tipo": "codigo", "texto": "> dur <- c(12.8, 32.9, 16.5, -51.4, 31.4, NA, 32, 6.7, 28.4, 22.4, 22.6, 7.2, 81.3, 5.6, 13.4, 13.1)"}, {"tipo": "codigo", "texto": "> usuario <- c(\"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\")"}, {"tipo": "codigo", "texto": "> tipo <- c(\"eléctrica\", \"mecánica\", \"mecánica\", \"eléctrica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\")"}, {"tipo": "codigo", "texto": "> origen <- c(\"E04\", \"E10\", \"E22\", \"E01\", \"E02\", \"E14\", \"E19\", \"E17\", \"E24\", \"E18\", \"E01\", \"E02\", \"E23\", \"E16\", \"E02\", \"E08\")"}, {"tipo": "codigo", "texto": "> destino <- c(\"E18\", \"E06\", \"E16\", \"E17\", \"E22\", NA, \"E17\", \"E16\", \"E03\", \"E04\", \"E08\", \"E04\", \"E11\", \"E15\", \"E15\", \"E19\")"}, {"tipo": "codigo", "texto": "> m <- (dur > 20)"}, {"tipo": "codigo", "texto": "> if (is.logical(m)) cat(\"MASCARA:\", ifelse(is.na(rep_len(m, length(dur))), \"NA\", rep_len(m, length(dur))), \"\\n\") else cat(\"POSICIONES:\", m, \"\\n\")"}, {"tipo": "stdout", "texto": "MASCARA: FALSE TRUE FALSE FALSE TRUE NA TRUE FALSE TRUE TRUE TRUE FALSE TRUE FALSE FALSE FALSE "}, {"tipo": "codigo", "texto": "> dur[m]"}, {"tipo": "stdout", "texto": "[1] 32.9 31.4   NA 32.0 28.4 22.4 22.6 81.3"}]}, "ocas": {"salida": [{"tipo": "codigo", "texto": "> dur <- c(12.8, 32.9, 16.5, -51.4, 31.4, NA, 32, 6.7, 28.4, 22.4, 22.6, 7.2, 81.3, 5.6, 13.4, 13.1)"}, {"tipo": "codigo", "texto": "> usuario <- c(\"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\")"}, {"tipo": "codigo", "texto": "> tipo <- c(\"eléctrica\", \"mecánica\", \"mecánica\", \"eléctrica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\")"}, {"tipo": "codigo", "texto": "> origen <- c(\"E04\", \"E10\", \"E22\", \"E01\", \"E02\", \"E14\", \"E19\", \"E17\", \"E24\", \"E18\", \"E01\", \"E02\", \"E23\", \"E16\", \"E02\", \"E08\")"}, {"tipo": "codigo", "texto": "> destino <- c(\"E18\", \"E06\", \"E16\", \"E17\", \"E22\", NA, \"E17\", \"E16\", \"E03\", \"E04\", \"E08\", \"E04\", \"E11\", \"E15\", \"E15\", \"E19\")"}, {"tipo": "codigo", "texto": "> m <- (usuario == \"ocasional\")"}, {"tipo": "codigo", "texto": "> if (is.logical(m)) cat(\"MASCARA:\", ifelse(is.na(rep_len(m, length(dur))), \"NA\", rep_len(m, length(dur))), \"\\n\") else cat(\"POSICIONES:\", m, \"\\n\")"}, {"tipo": "stdout", "texto": "MASCARA: FALSE FALSE FALSE TRUE FALSE TRUE FALSE FALSE TRUE FALSE FALSE FALSE FALSE TRUE FALSE FALSE "}, {"tipo": "codigo", "texto": "> dur[m]"}, {"tipo": "stdout", "texto": "[1] -51.4    NA  28.4   5.6"}]}, "y": {"salida": [{"tipo": "codigo", "texto": "> dur <- c(12.8, 32.9, 16.5, -51.4, 31.4, NA, 32, 6.7, 28.4, 22.4, 22.6, 7.2, 81.3, 5.6, 13.4, 13.1)"}, {"tipo": "codigo", "texto": "> usuario <- c(\"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\")"}, {"tipo": "codigo", "texto": "> tipo <- c(\"eléctrica\", \"mecánica\", \"mecánica\", \"eléctrica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\")"}, {"tipo": "codigo", "texto": "> origen <- c(\"E04\", \"E10\", \"E22\", \"E01\", \"E02\", \"E14\", \"E19\", \"E17\", \"E24\", \"E18\", \"E01\", \"E02\", \"E23\", \"E16\", \"E02\", \"E08\")"}, {"tipo": "codigo", "texto": "> destino <- c(\"E18\", \"E06\", \"E16\", \"E17\", \"E22\", NA, \"E17\", \"E16\", \"E03\", \"E04\", \"E08\", \"E04\", \"E11\", \"E15\", \"E15\", \"E19\")"}, {"tipo": "codigo", "texto": "> m <- (dur > 20 & usuario == \"abonado\")"}, {"tipo": "codigo", "texto": "> if (is.logical(m)) cat(\"MASCARA:\", ifelse(is.na(rep_len(m, length(dur))), \"NA\", rep_len(m, length(dur))), \"\\n\") else cat(\"POSICIONES:\", m, \"\\n\")"}, {"tipo": "stdout", "texto": "MASCARA: FALSE TRUE FALSE FALSE TRUE FALSE TRUE FALSE FALSE TRUE TRUE FALSE TRUE FALSE FALSE FALSE "}, {"tipo": "codigo", "texto": "> dur[m]"}, {"tipo": "stdout", "texto": "[1] 32.9 31.4 32.0 22.4 22.6 81.3"}]}, "lomas": {"salida": [{"tipo": "codigo", "texto": "> dur <- c(12.8, 32.9, 16.5, -51.4, 31.4, NA, 32, 6.7, 28.4, 22.4, 22.6, 7.2, 81.3, 5.6, 13.4, 13.1)"}, {"tipo": "codigo", "texto": "> usuario <- c(\"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\")"}, {"tipo": "codigo", "texto": "> tipo <- c(\"eléctrica\", \"mecánica\", \"mecánica\", \"eléctrica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\")"}, {"tipo": "codigo", "texto": "> origen <- c(\"E04\", \"E10\", \"E22\", \"E01\", \"E02\", \"E14\", \"E19\", \"E17\", \"E24\", \"E18\", \"E01\", \"E02\", \"E23\", \"E16\", \"E02\", \"E08\")"}, {"tipo": "codigo", "texto": "> destino <- c(\"E18\", \"E06\", \"E16\", \"E17\", \"E22\", NA, \"E17\", \"E16\", \"E03\", \"E04\", \"E08\", \"E04\", \"E11\", \"E15\", \"E15\", \"E19\")"}, {"tipo": "codigo", "texto": "> m <- (destino %in% c(\"E10\", \"E11\", \"E12\", \"E13\"))"}, {"tipo": "codigo", "texto": "> if (is.logical(m)) cat(\"MASCARA:\", ifelse(is.na(rep_len(m, length(dur))), \"NA\", rep_len(m, length(dur))), \"\\n\") else cat(\"POSICIONES:\", m, \"\\n\")"}, {"tipo": "stdout", "texto": "MASCARA: FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE TRUE FALSE FALSE FALSE "}, {"tipo": "codigo", "texto": "> dur[m]"}, {"tipo": "stdout", "texto": "[1] 81.3"}]}, "falta": {"salida": [{"tipo": "codigo", "texto": "> dur <- c(12.8, 32.9, 16.5, -51.4, 31.4, NA, 32, 6.7, 28.4, 22.4, 22.6, 7.2, 81.3, 5.6, 13.4, 13.1)"}, {"tipo": "codigo", "texto": "> usuario <- c(\"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\")"}, {"tipo": "codigo", "texto": "> tipo <- c(\"eléctrica\", \"mecánica\", \"mecánica\", \"eléctrica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\")"}, {"tipo": "codigo", "texto": "> origen <- c(\"E04\", \"E10\", \"E22\", \"E01\", \"E02\", \"E14\", \"E19\", \"E17\", \"E24\", \"E18\", \"E01\", \"E02\", \"E23\", \"E16\", \"E02\", \"E08\")"}, {"tipo": "codigo", "texto": "> destino <- c(\"E18\", \"E06\", \"E16\", \"E17\", \"E22\", NA, \"E17\", \"E16\", \"E03\", \"E04\", \"E08\", \"E04\", \"E11\", \"E15\", \"E15\", \"E19\")"}, {"tipo": "codigo", "texto": "> m <- (is.na(dur))"}, {"tipo": "codigo", "texto": "> if (is.logical(m)) cat(\"MASCARA:\", ifelse(is.na(rep_len(m, length(dur))), \"NA\", rep_len(m, length(dur))), \"\\n\") else cat(\"POSICIONES:\", m, \"\\n\")"}, {"tipo": "stdout", "texto": "MASCARA: FALSE FALSE FALSE FALSE FALSE TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE "}, {"tipo": "codigo", "texto": "> dur[m]"}, {"tipo": "stdout", "texto": "[1] NA"}]}, "neg": {"salida": [{"tipo": "codigo", "texto": "> dur <- c(12.8, 32.9, 16.5, -51.4, 31.4, NA, 32, 6.7, 28.4, 22.4, 22.6, 7.2, 81.3, 5.6, 13.4, 13.1)"}, {"tipo": "codigo", "texto": "> usuario <- c(\"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\")"}, {"tipo": "codigo", "texto": "> tipo <- c(\"eléctrica\", \"mecánica\", \"mecánica\", \"eléctrica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\")"}, {"tipo": "codigo", "texto": "> origen <- c(\"E04\", \"E10\", \"E22\", \"E01\", \"E02\", \"E14\", \"E19\", \"E17\", \"E24\", \"E18\", \"E01\", \"E02\", \"E23\", \"E16\", \"E02\", \"E08\")"}, {"tipo": "codigo", "texto": "> destino <- c(\"E18\", \"E06\", \"E16\", \"E17\", \"E22\", NA, \"E17\", \"E16\", \"E03\", \"E04\", \"E08\", \"E04\", \"E11\", \"E15\", \"E15\", \"E19\")"}, {"tipo": "codigo", "texto": "> m <- (dur < 0)"}, {"tipo": "codigo", "texto": "> if (is.logical(m)) cat(\"MASCARA:\", ifelse(is.na(rep_len(m, length(dur))), \"NA\", rep_len(m, length(dur))), \"\\n\") else cat(\"POSICIONES:\", m, \"\\n\")"}, {"tipo": "stdout", "texto": "MASCARA: FALSE FALSE FALSE TRUE FALSE NA FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE "}, {"tipo": "codigo", "texto": "> dur[m]"}, {"tipo": "stdout", "texto": "[1] -51.4    NA"}]}, "validos": {"salida": [{"tipo": "codigo", "texto": "> dur <- c(12.8, 32.9, 16.5, -51.4, 31.4, NA, 32, 6.7, 28.4, 22.4, 22.6, 7.2, 81.3, 5.6, 13.4, 13.1)"}, {"tipo": "codigo", "texto": "> usuario <- c(\"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\")"}, {"tipo": "codigo", "texto": "> tipo <- c(\"eléctrica\", \"mecánica\", \"mecánica\", \"eléctrica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\")"}, {"tipo": "codigo", "texto": "> origen <- c(\"E04\", \"E10\", \"E22\", \"E01\", \"E02\", \"E14\", \"E19\", \"E17\", \"E24\", \"E18\", \"E01\", \"E02\", \"E23\", \"E16\", \"E02\", \"E08\")"}, {"tipo": "codigo", "texto": "> destino <- c(\"E18\", \"E06\", \"E16\", \"E17\", \"E22\", NA, \"E17\", \"E16\", \"E03\", \"E04\", \"E08\", \"E04\", \"E11\", \"E15\", \"E15\", \"E19\")"}, {"tipo": "codigo", "texto": "> m <- (!is.na(dur) & dur >= 1)"}, {"tipo": "codigo", "texto": "> if (is.logical(m)) cat(\"MASCARA:\", ifelse(is.na(rep_len(m, length(dur))), \"NA\", rep_len(m, length(dur))), \"\\n\") else cat(\"POSICIONES:\", m, \"\\n\")"}, {"tipo": "stdout", "texto": "MASCARA: TRUE TRUE TRUE FALSE TRUE FALSE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE "}, {"tipo": "codigo", "texto": "> dur[m]"}, {"tipo": "stdout", "texto": " [1] 12.8 32.9 16.5 31.4 32.0  6.7 28.4 22.4 22.6  7.2 81.3  5.6 13.4"}, {"tipo": "stdout", "texto": "[14] 13.1"}]}, "which": {"salida": [{"tipo": "codigo", "texto": "> dur <- c(12.8, 32.9, 16.5, -51.4, 31.4, NA, 32, 6.7, 28.4, 22.4, 22.6, 7.2, 81.3, 5.6, 13.4, 13.1)"}, {"tipo": "codigo", "texto": "> usuario <- c(\"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\")"}, {"tipo": "codigo", "texto": "> tipo <- c(\"eléctrica\", \"mecánica\", \"mecánica\", \"eléctrica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\")"}, {"tipo": "codigo", "texto": "> origen <- c(\"E04\", \"E10\", \"E22\", \"E01\", \"E02\", \"E14\", \"E19\", \"E17\", \"E24\", \"E18\", \"E01\", \"E02\", \"E23\", \"E16\", \"E02\", \"E08\")"}, {"tipo": "codigo", "texto": "> destino <- c(\"E18\", \"E06\", \"E16\", \"E17\", \"E22\", NA, \"E17\", \"E16\", \"E03\", \"E04\", \"E08\", \"E04\", \"E11\", \"E15\", \"E15\", \"E19\")"}, {"tipo": "codigo", "texto": "> m <- (which(dur > 30))"}, {"tipo": "codigo", "texto": "> if (is.logical(m)) cat(\"MASCARA:\", ifelse(is.na(rep_len(m, length(dur))), \"NA\", rep_len(m, length(dur))), \"\\n\") else cat(\"POSICIONES:\", m, \"\\n\")"}, {"tipo": "stdout", "texto": "POSICIONES: 2 5 7 13 "}, {"tipo": "codigo", "texto": "> dur[m]"}, {"tipo": "stdout", "texto": "[1] 32.9 31.4 32.0 81.3"}]}, "pos": {"salida": [{"tipo": "codigo", "texto": "> dur <- c(12.8, 32.9, 16.5, -51.4, 31.4, NA, 32, 6.7, 28.4, 22.4, 22.6, 7.2, 81.3, 5.6, 13.4, 13.1)"}, {"tipo": "codigo", "texto": "> usuario <- c(\"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\", \"abonado\", \"abonado\", \"ocasional\", \"abonado\", \"abonado\")"}, {"tipo": "codigo", "texto": "> tipo <- c(\"eléctrica\", \"mecánica\", \"mecánica\", \"eléctrica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\", \"mecánica\")"}, {"tipo": "codigo", "texto": "> origen <- c(\"E04\", \"E10\", \"E22\", \"E01\", \"E02\", \"E14\", \"E19\", \"E17\", \"E24\", \"E18\", \"E01\", \"E02\", \"E23\", \"E16\", \"E02\", \"E08\")"}, {"tipo": "codigo", "texto": "> destino <- c(\"E18\", \"E06\", \"E16\", \"E17\", \"E22\", NA, \"E17\", \"E16\", \"E03\", \"E04\", \"E08\", \"E04\", \"E11\", \"E15\", \"E15\", \"E19\")"}, {"tipo": "codigo", "texto": "> m <- (c(1, 3, 5))"}, {"tipo": "codigo", "texto": "> if (is.logical(m)) cat(\"MASCARA:\", ifelse(is.na(rep_len(m, length(dur))), \"NA\", rep_len(m, length(dur))), \"\\n\") else cat(\"POSICIONES:\", m, \"\\n\")"}, {"tipo": "stdout", "texto": "POSICIONES: 1 3 5 "}, {"tipo": "codigo", "texto": "> dur[m]"}, {"tipo": "stdout", "texto": "[1] 12.8 16.5 31.4"}]}};
+  window.__ej_02_lab_2=Object.fromEntries(Object.entries(EJ).map(([k,e])=>[k,codigo(e.c)]));
+  const sel=$('#c2l2-ej'),inp=$('#c2l2-in');let w=null;
+  sel.innerHTML=Object.entries(EJ).map(([k,e])=>'<option value="'+k+'">dur['+e.c.replace(/</g,'&lt;')+']</option>').join('');
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const nf=v=>v===null?'NA':(v<0?'−':'')+Math.abs(v).toFixed(1).replace('.',',');
+  function estado(t,c){const e=$('#c2l2-estado');e.textContent=t;e.className='c2l2-estado'+(c?' '+c:'');}
+  function tarjetas(marca){
+    $('#c2l2-viajes').innerHTML=V.dur.map((d,i)=>{const m=marca?marca[i]:'';
+      const cls=m==='TRUE'?'si':m==='FALSE'?'no':m==='NA'?'na':'';
+      return '<div class="c2l2-v '+cls+'"><span class="c2l2-i">['+(i+1)+'] '+V.origen[i]+'→'+(V.destino[i]||'NA')+'</span><span class="c2l2-d">'+nf(d)+'</span>'+
+        V.usuario[i].slice(0,4)+'. · '+(V.tipo[i]==='eléctrica'?'eléc.':'mec.')+(m?'<span class="c2l2-m">'+m+'</span>':'')+'</div>';}).join('');
+  }
+  function mostrar(r,k,guardado){
+    $('#c2l2-sello').textContent=guardado?'guardado':'en vivo';
+    let marca=null,posic=null;const lineas=[];
+    r.salida.forEach(o=>{if(o.tipo==='codigo')return;const t=o.texto;
+      if(/^MASCARA:/.test(t))marca=t.replace('MASCARA:','').trim().split(/\s+/);
+      else if(/^POSICIONES:/.test(t))posic=t.replace('POSICIONES:','').trim().split(/\s+/).filter(Boolean).map(Number);
+      else lineas.push(o.tipo==='stderr'?'<span class="c2l2-err">'+esc(t)+'</span>':esc(t));});
+    if(posic){const n=V.dur.length;marca=new Array(n).fill('FALSE');
+      if(posic.length&&posic.every(p=>p<0)){marca.fill('TRUE');posic.forEach(p=>{if(-p<=n)marca[-p-1]='FALSE';});}
+      else posic.forEach(p=>{if(p>=1&&p<=n)marca[p-1]='TRUE';});}
+    tarjetas(r.error?null:marca);
+    $('#c2l2-salida').innerHTML='<span style="color:var(--c-red)">&gt; dur['+esc(k?EJ[k].c:inp.value)+']</span>\n'+lineas.join('\n');
+    if(r.error){$('#c2l2-out').innerHTML='<span class="warn">R no pudo evaluar la condición.</span><span>Lee el mensaje: casi siempre es un nombre mal escrito (los vectores se llaman <code>dur</code>, <code>usuario</code>, <code>tipo</code>, <code>origen</code> y <code>destino</code>) o un paréntesis sin cerrar.</span>';return;}
+    const n=marca?marca.filter(x=>x==='TRUE').length:0,nna=marca?marca.filter(x=>x==='NA').length:0;
+    $('#c2l2-out').innerHTML='<span class="big">'+n+' de 16 viajes quedan'+(nna?' · '+nna+' NA':'')+'</span><span>'+(k?EJ[k].x:(posic?'La expresión devolvió posiciones, no TRUE y FALSE: los corchetes se quedan con esas posiciones.':'Los corchetes se quedan con las posiciones donde tu condición dio TRUE. Un NA en la condición produce un NA en el resultado.'))+'</span>';
+  }
+  function verEjemplo(){const k=sel.value;inp.value=EJ[k].c;
+    if(w)ejecutar(k);else mostrar(GUARDADO[k],k,true);}
+  sel.addEventListener('change',verEjemplo);
+  async function preparar(){
+    $('#c2l2-cargar').disabled=true;
+    try{w=await R.cargar([],t=>estado(t));
+      estado('Listo: R 4.6 en tu navegador · escribe tu propia condición','ok');
+      $('#c2l2-run').disabled=false;$('#c2l2-cargar').hidden=true;ejecutar(null);
+    }catch(e){estado('No se pudo cargar R. Revisa tu conexión y vuelve a intentar; los ejemplos guardados siguen funcionando.','warn');$('#c2l2-cargar').disabled=false;}
+  }
+  async function ejecutar(k){
+    if(!w)return;const cond=inp.value.trim();if(!cond)return;
+    const kk=k||Object.keys(EJ).find(x=>EJ[x].c===cond)||null;
+    $('#c2l2-run').disabled=true;estado('Ejecutando…');
+    const r=await R.correr(w,'02-lab-2',codigo(cond));
+    mostrar(r,kk,false);estado(r.error?'R terminó con un error':'Listo · calculado en tu navegador',r.error?'warn':'ok');
+    $('#c2l2-run').disabled=false;
+  }
+  $('#c2l2-cargar').addEventListener('click',preparar);
+  $('#c2l2-run').addEventListener('click',()=>ejecutar(null));
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();if(w)ejecutar(null);else preparar();}});
+  verEjemplo();
+})();
+</script>
+<script>
+(function(){
+  const {$}=window.Lab;
+  const raiz=document.querySelector('[id="02-lab-1"]');
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const A=[12,30,7,25,41,18,9,22],B=[1,2,3,10,5,2,4,6];
+  const CASOS={esc:[6,1],mitad:[6,3],no:[7,3],igual:[4,4]};
+  let timer=null;
+  function rfmt(v){return v.map(x=>typeof x==='boolean'?(x?'TRUE':'FALSE'):String(x));}
+  function rprint(v){const s=rfmt(v),w=Math.max(...s.map(x=>x.length));return '[1] '+s.map(x=>x.padStart(w)).join(' ');}
+  function pintar(){
+    if(timer){clearInterval(timer);timer=null;}
+    const na=+$('#c2l1-na').value,nb=+$('#c2l1-nb').value,op=$('#c2l1-op').value;
+    $('#c2l1-ona').textContent=na;$('#c2l1-onb').textContent=nb;
+    const a=A.slice(0,na),b=B.slice(0,nb),n=Math.max(na,nb);
+    const res=[];for(let i=0;i<n;i++){const x=a[i%na],y=b[i%nb];res.push(op==='+'?x+y:op==='*'?x*y:x>y);}
+    const largo=na>=nb?'a':'b';
+    const celdas=(v,cls,rec)=>v.map((x,i)=>'<span class="c2l1-c '+cls+(rec&&rec(i)?' c2l1-rec':'')+'" data-i="'+i+'">'+rfmt([x])[0]+'<small>'+(i+1)+'</small></span>').join('');
+    const aR=[],bR=[];for(let i=0;i<n;i++){aR.push(a[i%na]);bR.push(b[i%nb]);}
+    $('#c2l1-fa').innerHTML=celdas(aR,'c2l1-a',i=>i>=na);
+    $('#c2l1-fb').innerHTML=celdas(bR,'c2l1-b',i=>i>=nb);
+    $('#c2l1-fr').innerHTML=celdas(res,'c2l1-r');
+    const multiplo=n%Math.min(na,nb)===0;
+    const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const cod=esc('> a <- c('+a.join(', ')+')\n> b <- c('+b.join(', ')+')\n> a '+op+' b\n'+rprint(res))+
+      (multiplo?'':'\n<span class="c2l1-warn">'+esc('Warning message:\nIn a '+op+' b : longer object length is not a multiple of shorter object length')+'</span>');
+    $('#c2l1-cod').innerHTML=cod;
+    const corto=Math.min(na,nb),veces=n/corto;
+    let txt;
+    if(na===nb)txt='Los dos vectores tienen el mismo largo: R opera el elemento 1 con el 1, el 2 con el 2, y así. No hay reciclaje.';
+    else if(corto===1)txt='<code>'+(na===1?'a':'b')+'</code> tiene un solo elemento y R lo repite '+n+' veces. Así funciona <code>duraciones * 60</code>: el 60 es un vector de largo uno que se recicla.';
+    else if(multiplo)txt='El vector corto ('+corto+' elementos) se repite '+veces+' veces para alcanzar al largo ('+n+'). Las casillas punteadas son copias recicladas.';
+    else txt='El largo ('+n+') no es múltiplo del corto ('+corto+'): la última vuelta del vector corto queda a medias. R calcula igual, pero <b>avisa</b>. Casi siempre ese aviso señala un error en tus datos.';
+    $('#c2l1-out').innerHTML='<span class="big'+(multiplo?'':' warn')+'">'+(multiplo?'Reciclaje sin aviso':'Reciclaje con aviso')+' · '+n+' resultados</span><span>'+txt+'</span>';
+  }
+  function recorrer(){
+    if(timer){clearInterval(timer);timer=null;}
+    const filas=['#c2l1-fa','#c2l1-fb','#c2l1-fr'].map(s=>[...$(s).children]);
+    const n=filas[2].length;let i=0;
+    const luz=k=>filas.forEach(f=>f.forEach((c,j)=>c.classList.toggle('c2l1-luz',j===k)));
+    if(reduce){luz(-1);return;}
+    luz(0);timer=setInterval(()=>{i++;if(i>=n){clearInterval(timer);timer=null;setTimeout(()=>luz(-1),500);return;}luz(i);},550);
+  }
+  raiz.querySelectorAll('[data-caso]').forEach(b=>b.addEventListener('click',()=>{
+    raiz.querySelectorAll('[data-caso]').forEach(x=>x.setAttribute('aria-pressed',x===b));
+    const [na,nb]=CASOS[b.dataset.caso];$('#c2l1-na').value=na;$('#c2l1-nb').value=nb;pintar();}));
+  ['#c2l1-na','#c2l1-nb'].forEach(s=>$(s).addEventListener('input',()=>{raiz.querySelectorAll('[data-caso]').forEach(x=>x.setAttribute('aria-pressed','false'));pintar();}));
+  $('#c2l1-op').addEventListener('change',pintar);
+  $('#c2l1-paso').addEventListener('click',recorrer);
+  pintar();
+})();
+</script>
+</body>
+</html>

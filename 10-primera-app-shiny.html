@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="es">
+<head>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-KX76XF8R');</script>
+<!-- End Google Tag Manager -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>La primera aplicación · R y aplicaciones interactivas · R y aplicaciones interactivas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Programación en R, gráficos dinámicos y aplicaciones Shiny para el análisis de datos: el lenguaje, el tidyverse, ggplot2, htmlwidgets, Quarto y Shiny, con código que se ejecuta en la página con webR.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400;1,8..60,600&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KX76XF8R"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<div class="wrap" data-page="primera-app-shiny">
+<header class="topbar"><a class="brand" href="index.html">R y aplicaciones <b>interactivas</b></a><span class="eyebrow">Curso visual e interactivo · Datos e inteligencia artificial</span><a class="al-sitio" href="https://aaramirez.github.io/">← Todos los cursos</a></header>
+<div class="layout">
+<nav class="toc" id="toc" aria-label="Ruta de aprendizaje"></nav>
+<main>
+<header class="page-head"><span class="num">CAPÍTULO 10 DE 14</span><h1>La primera aplicación Shiny</h1><p class="lede">Ernesto ya no quiere otro gráfico por correo: quiere mover él mismo la hora, el barrio y las fechas. Este capítulo convierte el análisis de los viajes en una aplicación web con Shiny: una interfaz que se declara, un servidor que responde, las entradas y salidas más usadas, un diseño con bslib y la misma idea en Python.</p></header>
+<section><h2>Qué es Shiny y qué problema resuelve</h2><div class="prose"><p>Un lunes, Ernesto Salas le escribe a Gabriela Rondón: «¿Me mandas los viajes por hora, pero solo de Las Lomas?». Gabriela cambia una línea de su guion, guarda el gráfico y se lo envía. A la media hora llega otro correo: «¿Y solo en la mañana? ¿Y si dejo afuera agosto?». Cada pregunta nueva es otro gráfico hecho a mano. El análisis está bien; lo que falla es el camino: Ernesto depende de Gabriela para cada variante de la misma pregunta.</p><p>La salida es darle a Ernesto los controles. En lugar de mandarle el resultado, Gabriela le manda una página donde él elige la hora, el barrio y las fechas, y el gráfico se rehace solo. Eso es una <b>aplicación web</b> (<i>web application</i>): un programa que se usa desde el navegador, sin instalar nada.</p></div><div class="analogia"><b>Imagínalo así</b><p>Piensa en un restaurante. El menú es lo que el cliente ve y donde elige: no cocina nada, solo ofrece opciones. La cocina recibe el pedido, prepara el plato y lo devuelve. El mesero lleva y trae. En Shiny, el menú es la interfaz, la cocina es el servidor que corre tu código de R y el mesero es una conexión que lleva cada elección y trae cada resultado. Ernesto pide desde el menú; Gabriela solo escribió la carta y la receta una vez.</p></div><div class="prose"><p><b>Shiny</b> es un paquete de R para escribir aplicaciones web <b>solo con R</b>. Lo presentó RStudio (hoy Posit) en 2012, y su idea central es que quien analiza datos no tenga que aprender HTML, CSS ni JavaScript para publicar una herramienta. Tú describes la página con funciones de R (un deslizador, una lista, un hueco para un gráfico) y escribes el código que calcula cada resultado. Shiny traduce la descripción a HTML, abre la conexión con el navegador y decide cuándo volver a correr cada parte de tu código.</p><p>Esa última frase es la que hace a Shiny distinto de un guion. Un guion corre de arriba abajo una vez. Una aplicación Shiny queda viva, esperando, y cuando Ernesto mueve el deslizador vuelve a ejecutar solo lo que depende de ese deslizador. El capítulo 11 explica cómo lo decide; aquí basta saber que lo hace.</p></div><figure class="fig fig-arquitectura" id="10-diagrama-1"><div class="lienzo"><svg viewBox="0 0 900 430" style="min-width:720px;font-variant-ligatures:none" role="img" aria-label="Dos formas de correr una aplicación Shiny: arriba, el navegador muestra la interfaz y habla por WebSocket con un proceso de R en un servidor; abajo, con Shinylive, el navegador descarga archivos estáticos y corre R compilado a WebAssembly dentro de la misma página">
+<defs><marker id="c10d1-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="fl-muted"/></marker></defs>
+<text x="20" y="26" class="t t-b">Shiny clásico: el R corre en un servidor</text>
+<rect x="20" y="40" width="330" height="160" rx="10" class="d-inet"/>
+<text x="36" y="62" class="t t-xs t-b k-inet">NAVEGADOR DE LA PERSONA</text>
+<rect x="40" y="76" width="290" height="44" rx="6" class="caja"/>
+<text x="52" y="96" class="t t-s t-b">Interfaz en HTML</text><text x="52" y="111" class="t t-s t-m">deslizadores, gráficos, tablas</text>
+<rect x="40" y="132" width="290" height="50" rx="6" class="caja"/>
+<text x="52" y="152" class="t t-s t-b t-mono">shiny.js</text><text x="52" y="168" class="t t-s t-m">envía entradas, pinta salidas</text>
+<line x1="356" y1="120" x2="534" y2="120" class="ln" marker-start="url(#c10d1-m)" marker-end="url(#c10d1-m)"/>
+<text x="445" y="108" class="t t-s t-b" text-anchor="middle">WebSocket</text>
+<text x="445" y="140" class="t t-s t-m" text-anchor="middle">entradas → · ← salidas</text>
+<text x="445" y="156" class="t t-s t-m" text-anchor="middle">conexión abierta</text>
+<rect x="540" y="40" width="340" height="160" rx="10" class="d-sis"/>
+<text x="556" y="62" class="t t-xs t-b k-sis">SERVIDOR: TU EQUIPO, POSIT CONNECT…</text>
+<rect x="560" y="76" width="300" height="106" rx="6" class="caja"/>
+<text x="574" y="98" class="t t-s t-b">Proceso de R con el paquete shiny</text>
+<text x="574" y="118" class="t t-s t-mono">app.R → ui + server</text>
+<text x="574" y="138" class="t t-s t-m">una sesión por pestaña abierta</text>
+<text x="574" y="156" class="t t-s t-m">lee archivos y bases del servidor</text>
+<text x="574" y="174" class="t t-s t-m">los datos no salen de ahí</text>
+<line x1="20" y1="222" x2="880" y2="222" class="ln ln-d"/>
+<text x="20" y="252" class="t t-b">Shinylive: el R corre dentro del navegador</text>
+<rect x="20" y="266" width="560" height="146" rx="10" class="d-inet"/>
+<text x="36" y="288" class="t t-xs t-b k-inet">NAVEGADOR DE LA PERSONA</text>
+<rect x="40" y="302" width="200" height="92" rx="6" class="caja"/>
+<text x="52" y="322" class="t t-s t-b">Interfaz en HTML</text><text x="52" y="340" class="t t-s t-mono">shiny.js</text>
+<text x="52" y="358" class="t t-s t-m">igual que arriba</text>
+<line x1="244" y1="348" x2="306" y2="348" class="ln" marker-start="url(#c10d1-m)" marker-end="url(#c10d1-m)"/>
+<text x="275" y="330" class="t t-xs t-m" text-anchor="middle">EN LA</text><text x="275" y="341" class="t t-xs t-m" text-anchor="middle">PÁGINA</text>
+<rect x="310" y="302" width="250" height="92" rx="6" class="caja"/>
+<text x="322" y="322" class="t t-s t-b">webR: R en WebAssembly</text>
+<text x="322" y="340" class="t t-s t-mono">app.R → ui + server</text>
+<text x="322" y="358" class="t t-s t-m">paquetes compilados para webR</text>
+<text x="322" y="376" class="t t-s t-m">primera carga: decenas de MB</text>
+<line x1="586" y1="340" x2="654" y2="340" class="ln" marker-start="url(#c10d1-m)"/>
+<text x="620" y="328" class="t t-xs t-m" text-anchor="middle">DESCARGA</text>
+<rect x="660" y="266" width="220" height="146" rx="10" class="caja"/>
+<text x="676" y="288" class="t t-xs t-b t-m">SITIO ESTÁTICO</text>
+<text x="676" y="312" class="t t-s">GitHub Pages, shinylive.io</text>
+<text x="676" y="332" class="t t-s t-m">solo entrega archivos:</text>
+<text x="676" y="350" class="t t-s t-m">HTML, JS, webR, paquetes</text>
+<text x="676" y="368" class="t t-s t-m">y tu app.R</text>
+<text x="676" y="392" class="t t-s t-m">no ejecuta R</text>
+</svg></div><figcaption><b>Dos formas de correr la misma aplicación.</b> Arriba, Shiny clásico: el navegador muestra la interfaz y <code>shiny.js</code>, la parte de Shiny que vive en la página, habla por una conexión abierta (WebSocket) con un proceso de R en un servidor; los datos se quedan en el servidor. Abajo, Shinylive: un sitio estático entrega los archivos y el navegador corre R compilado a WebAssembly (webR) dentro de la misma página; no hay un R en ningún servidor. El <code>app.R</code> es el mismo en los dos casos.</figcaption></figure><div class="prose"><p>Hay dos maneras de poner a correr una aplicación, y conviene distinguirlas desde el principio:</p><ul><li><b>Shiny con servidor.</b> Un proceso de R corre en una máquina (tu computador mientras desarrollas; en producción, un servicio como Posit Connect, shinyapps.io o un contenedor, que verás en el capítulo 13). Cada persona que abre la página recibe una <b>sesión</b> (<i>session</i>) propia en ese proceso. Los datos nunca salen del servidor: el navegador solo recibe el gráfico ya dibujado.</li><li><b>Shinylive.</b> La aplicación entera, con R incluido, se descarga al navegador y corre ahí gracias a webR, el R compilado a WebAssembly que ya conoces del capítulo 01. No hace falta servidor: basta un sitio estático como GitHub Pages. A cambio, la primera carga pesa decenas de megabytes, solo funcionan los paquetes compilados para webR y <b>los datos viajan al navegador de cada visitante</b>, así que no sirve para datos confidenciales.</li></ul><p>Los laboratorios de este capítulo usan Shinylive porque así la aplicación corre en la página sin instalar nada. Shinylive es un servicio gratuito de Posit que corre la aplicación en tu navegador con webR; no hay servidor. Las prácticas, en cambio, corren Shiny con servidor en tu propio equipo, que es como trabajarás de verdad.</p></div></section>
+<section><h2>La interfaz (<code>ui</code>) y el servidor (<code>server</code>)</h2><div class="prose"><p>Toda aplicación Shiny tiene dos partes y una línea que las une. Puede vivir en un solo archivo, <code>app.R</code>, que es la forma recomendada para empezar:</p><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln">library(shiny)</span>
+<span class="ln"></span>
+<span class="ln">ui &lt;- fluidPage(</span>
+<span class="ln">  sliderInput("hora", "Desde la hora", min = 6, max = 23, value = 7),</span>
+<span class="ln">  plotOutput("grafico")</span>
+<span class="ln">)</span>
+<span class="ln"></span>
+<span class="ln">server &lt;- function(input, output) {</span>
+<span class="ln">  output$grafico &lt;- renderPlot({</span>
+<span class="ln">    v &lt;- viajes[viajes$hora &gt;= input$hora, ]</span>
+<span class="ln">    hist(v$duracion_min)</span>
+<span class="ln">  })</span>
+<span class="ln">}</span>
+<span class="ln"></span>
+<span class="ln">shinyApp(ui, server)</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><p>La <b>interfaz</b> (<i>user interface</i>, <code>ui</code>) es un objeto, no una función: describe qué se ve. <code>fluidPage()</code> arma una página, <code>sliderInput()</code> pone un deslizador y <code>plotOutput()</code> deja un hueco vacío donde irá un gráfico. Si imprimes <code>ui</code> en la consola, verás el HTML que genera: Shiny es, en esa parte, un traductor de funciones de R a etiquetas HTML.</p><p>El <b>servidor</b> (<i>server</i>) es una función con dos argumentos, <code>input</code> y <code>output</code>, que Shiny llama una vez por cada sesión. <code>input</code> es una lista de <b>solo lectura</b> con el valor actual de cada entrada: <code>input$hora</code> vale lo que marque el deslizador en ese momento. <code>output</code> es una lista donde tú <b>asignas</b>: a cada <code>output$nombre</code> le das el resultado de una función <code>render*()</code>, que contiene el código que produce esa salida. Al final, <code>shinyApp(ui, server)</code> junta las dos partes y arranca.</p></div><figure class="fig fig-esquema" id="10-diagrama-2"><div class="lienzo"><svg viewBox="0 0 900 420" style="min-width:720px;font-variant-ligatures:none" role="img" aria-label="Anatomía de app.R: la interfaz declara una entrada con id hora y una salida con id grafico; el servidor lee input$hora y asigna output$grafico con renderPlot; el mismo id une cada pieza de la interfaz con su pieza del servidor">
+<defs><marker id="c10d2-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="fl-muted"/></marker>
+<marker id="c10d2-f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="k-tra"/></marker>
+<marker id="c10d2-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="k-apl"/></marker></defs>
+<text x="20" y="24" class="t t-xs t-b t-m">APP.R: UN ARCHIVO, TRES PARTES</text>
+<rect x="20" y="36" width="400" height="300" rx="10" class="d-inet"/>
+<text x="36" y="58" class="t t-xs t-b k-inet">1 · UI: QUÉ SE VE (SE DECLARA UNA VEZ)</text>
+<text x="40" y="86" class="t t-s t-mono">ui &lt;- page_sidebar(</text>
+<text x="56" y="106" class="t t-s t-mono">sidebar = sidebar(</text>
+<rect x="66" y="116" width="336" height="44" rx="6" class="c-tra"/>
+<text x="76" y="134" class="t t-s t-mono">sliderInput(<tspan class="t-b k-tra">"hora"</tspan>, "Desde la hora",</text>
+<text x="172" y="151" class="t t-s t-mono">0, 23, 7)</text>
+<text x="56" y="180" class="t t-s t-mono">),</text>
+<rect x="66" y="192" width="336" height="30" rx="6" class="c-apl"/>
+<text x="76" y="212" class="t t-s t-mono">plotOutput(<tspan class="t-b k-apl">"grafico"</tspan>)</text>
+<text x="40" y="244" class="t t-s t-mono">)</text>
+<text x="40" y="276" class="t t-s t-m">La interfaz se convierte en HTML:</text>
+<text x="40" y="294" class="t t-s t-m">un deslizador y un hueco vacío</text>
+<text x="40" y="312" class="t t-s t-m">que el servidor va a llenar.</text>
+<rect x="480" y="36" width="400" height="300" rx="10" class="d-sis"/>
+<text x="496" y="58" class="t t-xs t-b k-sis">2 · SERVER: CÓMO SE CALCULA (CORRE POR SESIÓN)</text>
+<text x="500" y="86" class="t t-s t-mono">server &lt;- function(input, output) {</text>
+<rect x="510" y="98" width="352" height="30" rx="6" class="c-apl"/>
+<text x="520" y="118" class="t t-s t-mono"><tspan class="t-b k-apl">output$grafico</tspan> &lt;- renderPlot({</text>
+<rect x="526" y="140" width="336" height="44" rx="6" class="c-tra"/>
+<text x="536" y="158" class="t t-s t-mono">v &lt;- viajes[viajes$hora &gt;=</text>
+<text x="610" y="175" class="t t-s t-mono"><tspan class="t-b k-tra">input$hora</tspan>, ]</text>
+<text x="526" y="208" class="t t-s t-mono">hist(v$duracion_min)</text>
+<text x="510" y="230" class="t t-s t-mono">})</text>
+<text x="500" y="252" class="t t-s t-mono">}</text>
+<text x="500" y="284" class="t t-s t-m">input es una lista de solo lectura;</text>
+<text x="500" y="302" class="t t-s t-m">output, una lista donde se asignan</text>
+<text x="500" y="320" class="t t-s t-m">funciones render*().</text>
+<path d="M402 138 C440 138 450 162 520 162" class="ln s-tra" style="stroke-width:2" marker-end="url(#c10d2-f)"/>
+<path d="M508 113 C460 113 450 207 406 207" class="ln s-apl" style="stroke-width:2" marker-end="url(#c10d2-a)"/>
+<text x="450" y="98" class="t t-xs t-b k-apl" text-anchor="middle">ID</text>
+<text x="452" y="192" class="t t-xs t-b k-tra" text-anchor="middle">ID</text>
+<rect x="20" y="350" width="860" height="60" rx="8" class="caja"/>
+<text x="36" y="374" class="t t-s"><tspan class="t-b">3 · shinyApp(ui, server)</tspan> une las dos partes y arranca.</text><text x="36" y="394" class="t t-s">El id es el cable: <tspan class="t-mono">"hora"</tspan> en la interfaz es <tspan class="t-mono">input$hora</tspan> en el servidor, y <tspan class="t-mono">output$grafico</tspan> llena <tspan class="t-mono">plotOutput("grafico")</tspan>.</text>
+</svg></div><figcaption><b>El id es el cable.</b> A la izquierda, la interfaz: un deslizador con id <code>"hora"</code> (morado) y un hueco con id <code>"grafico"</code> (rosa). A la derecha, el servidor: <code>output$grafico</code> se asigna con <code>renderPlot()</code>, y adentro se lee <code>input$hora</code>. Las flechas unen cada id de la interfaz con su nombre en el servidor. Si los dos nombres no coinciden letra por letra, no pasa nada visible: el hueco queda vacío y no hay error.</figcaption></figure><div class="prose"><p>Tres reglas evitan casi todos los tropiezos del primer día:</p><ol class="steps"><li><span><b>Cada id es único</b> en la página y se escribe igual en los dos lados: <code>"hora"</code> en la interfaz es <code>input$hora</code> en el servidor. Un error de tipeo no avisa; el gráfico simplemente no aparece.</span></li><li><span><b><code>input</code> no se escribe.</b> <code>input$hora &lt;- 9</code> da error. Para cambiar el valor de un control desde el servidor existen funciones como <code>updateSliderInput()</code>, que verás en el capítulo 12.</span></li><li><span><b>Lo que no va dentro de <code>server</code> se ejecuta una sola vez</b> al arrancar, y lo comparten todas las sesiones. Por eso leer los datos va arriba, fuera del servidor: el archivo se lee una vez y no una por visitante.</span></li></ol><p>¿Qué pasa por la red cuando alguien abre la aplicación? Primero una petición normal de una página web por <b>HTTP</b> (<i>Hypertext Transfer Protocol</i>, protocolo de transferencia de hipertexto): el navegador pide la dirección y el servidor responde con el HTML de la interfaz y el archivo <code>shiny.js</code>. Después <code>shiny.js</code> abre un <b>WebSocket</b> (enchufe web), una conexión que queda abierta en los dos sentidos. Por ahí viajan, como mensajes cortos en <b>JSON</b> (<i>JavaScript Object Notation</i>, notación de objetos de JavaScript), los valores de las entradas hacia el servidor y las salidas ya calculadas hacia el navegador.</p></div><figure class="fig fig-flujo" id="10-diagrama-3"><div class="lienzo"><svg viewBox="0 0 900 520" style="min-width:720px;font-variant-ligatures:none" role="img" aria-label="Flujo de una aplicación Shiny: la persona abre la dirección, el navegador pide la página por HTTP, abre un WebSocket, envía los valores iniciales de las entradas, el servidor calcula las salidas y las envía; al mover el deslizador viaja solo el valor nuevo y vuelve solo la salida que depende de él">
+<defs>
+<marker id="c10d3-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="fl-muted"/></marker>
+<marker id="c10d3-f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="k-tra"/></marker>
+<marker id="c10d3-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="k-apl"/></marker>
+</defs>
+<rect x="30" y="20" width="150" height="44" rx="8" style="fill:var(--warm-soft);stroke:var(--warm)"/><text x="105" y="47" class="t t-b k-warm" text-anchor="middle">Gabriela</text>
+<rect x="250" y="20" width="200" height="44" rx="8" class="d-inet"/><text x="350" y="40" class="t t-b" text-anchor="middle">Navegador</text><text x="350" y="56" class="t t-s t-mono" text-anchor="middle">shiny.js</text>
+<rect x="540" y="20" width="200" height="44" rx="8" class="d-sis"/><text x="640" y="40" class="t t-b" text-anchor="middle">Servidor</text><text x="640" y="56" class="t t-s" text-anchor="middle">sesión de R</text>
+<line x1="105" y1="64" x2="105" y2="505" class="vida"/><line x1="350" y1="64" x2="350" y2="505" class="vida"/><line x1="640" y1="64" x2="640" y2="505" class="vida"/>
+<line x1="105" y1="96" x2="344" y2="96" class="ln" marker-end="url(#c10d3-m)"/><text x="115" y="90" class="t t-s">① abre la dirección de la app</text>
+<line x1="350" y1="128" x2="634" y2="128" class="ln" marker-end="url(#c10d3-m)"/><text x="360" y="122" class="t t-s">② GET / por HTTP</text>
+<line x1="640" y1="160" x2="356" y2="160" class="ln" marker-end="url(#c10d3-m)"/><text x="630" y="154" class="t t-s" text-anchor="end">③ HTML de la ui (+ shiny.js)</text>
+<line x1="350" y1="194" x2="634" y2="194" class="ln" style="stroke-width:2.4" marker-end="url(#c10d3-m)"/><text x="360" y="188" class="t t-s t-b">④ abre el WebSocket</text>
+<line x1="350" y1="228" x2="634" y2="228" class="ln s-tra" marker-end="url(#c10d3-f)"/><text x="360" y="222" class="t t-s t-mono k-tra">⑤ {hora: 7, estacion: …}</text>
+<rect x="646" y="240" width="20" height="40" class="c-red"/><text x="674" y="256" class="t t-s">⑥ corre server():</text><text x="674" y="272" class="t t-s">todas las salidas</text>
+<line x1="640" y1="300" x2="356" y2="300" class="ln s-apl" marker-end="url(#c10d3-a)"/><text x="630" y="294" class="t t-s t-mono k-apl" text-anchor="end">⑦ grafico: PNG, resumen: texto</text>
+<line x1="350" y1="330" x2="111" y2="330" class="ln" marker-end="url(#c10d3-m)"/><text x="340" y="324" class="t t-s" text-anchor="end">⑧ ve la app completa</text>
+<line x1="105" y1="378" x2="344" y2="378" class="ln" marker-end="url(#c10d3-m)"/><text x="115" y="372" class="t t-s">⑨ mueve el deslizador a 9</text>
+<line x1="350" y1="410" x2="634" y2="410" class="ln s-tra" marker-end="url(#c10d3-f)"/><text x="360" y="404" class="t t-s t-mono k-tra">⑩ {hora: 9} (solo lo nuevo)</text>
+<rect x="646" y="420" width="20" height="30" class="c-red"/><text x="674" y="432" class="t t-s">⑪ recalcula</text><text x="674" y="448" class="t t-s">lo que usa hora</text>
+<line x1="640" y1="470" x2="356" y2="470" class="ln s-apl" marker-end="url(#c10d3-a)"/><text x="630" y="464" class="t t-s t-mono k-apl" text-anchor="end">⑫ grafico: PNG nuevo</text>
+<line x1="350" y1="496" x2="111" y2="496" class="ln" marker-end="url(#c10d3-m)"/><text x="340" y="490" class="t t-s" text-anchor="end">⑬ cambia solo el gráfico</text>
+<rect x="770" y="80" width="112" height="140" rx="6" class="caja"/><text x="780" y="102" class="t t-xs t-b t-m">ARRANQUE</text><text x="780" y="122" class="t t-s">① a ⑧</text><text x="780" y="140" class="t t-s t-m">1 ida y vuelta</text><text x="780" y="156" class="t t-s t-m">HTTP y luego</text><text x="780" y="172" class="t t-s t-m">la conexión</text><text x="780" y="188" class="t t-s t-m">queda abierta</text>
+<rect x="770" y="240" width="112" height="90" rx="6" class="c-red"/><text x="780" y="262" class="t t-xs t-b k-red">PRIMER CÁLCULO</text><text x="780" y="282" class="t t-s">⑤ a ⑦</text><text x="780" y="300" class="t t-s t-m">por WebSocket</text>
+<rect x="770" y="360" width="112" height="140" rx="6" class="c-tra"/><text x="780" y="382" class="t t-xs t-b k-tra">CADA CAMBIO</text><text x="780" y="402" class="t t-s">⑨ a ⑬</text><text x="780" y="420" class="t t-s t-m">un mensaje de</text><text x="780" y="436" class="t t-s t-m">ida y uno de</text><text x="780" y="452" class="t t-s t-m">vuelta, sin</text><text x="780" y="468" class="t t-s t-m">recargar</text>
+</svg></div><figcaption><b>El flujo de una aplicación Shiny.</b> Tres participantes: Gabriela, su navegador con <code>shiny.js</code> y la sesión de R en el servidor. De ① a ④, el arranque: pedir la página por HTTP, recibir el HTML y abrir el WebSocket. De ⑤ a ⑧, el primer cálculo: el navegador manda todos los valores iniciales (morado), el servidor corre todas las salidas y devuelve el gráfico como imagen PNG y el texto (rosa). De ⑨ a ⑬, cada cambio: viaja solo el valor nuevo, se recalcula solo lo que depende de él y vuelve solo esa salida. La página nunca se recarga.</figcaption></figure><div class="prose"><p>Este diseño explica dos cosas que vas a notar enseguida. La primera: la aplicación responde rápido aunque la página no se recargue, porque por el WebSocket viaja muy poco. La segunda: si el servidor está ocupado con un cálculo largo, la página se pone gris y espera, porque cada sesión corre en un proceso de R que hace una cosa a la vez. El capítulo 12 trata ese problema con caché y tareas asíncronas.</p></div></section>
+<section><h2>Entradas: deslizadores, listas, fechas y archivos</h2><div class="prose"><p>Una <b>entrada</b> (<i>input</i>) es un control que la persona usa y cuyo valor llega al servidor. Todas se crean con una función que termina en <code>Input</code> (o parecida) y comparten los dos primeros argumentos: el id (<code>inputId</code>) y la etiqueta que se ve (<code>label</code>). El resto depende del control.</p><div class="tbl"><table><thead><tr><th>Función</th><th>Qué muestra</th><th>Qué recibe el servidor</th></tr></thead><tbody><tr><td><code>sliderInput()</code></td><td>Deslizador; con dos valores, un rango</td><td>Un número, o dos</td></tr><tr><td><code>selectInput()</code></td><td>Lista desplegable; con <code>multiple = TRUE</code>, varias</td><td>Texto (un vector si son varias)</td></tr><tr><td><code>radioButtons()</code></td><td>Una opción entre pocas, a la vista</td><td>Texto</td></tr><tr><td><code>checkboxInput()</code></td><td>Una casilla de sí o no</td><td><code>TRUE</code> o <code>FALSE</code></td></tr><tr><td><code>checkboxGroupInput()</code></td><td>Varias casillas</td><td>Vector de texto, o <code>NULL</code></td></tr><tr><td><code>numericInput()</code>, <code>textInput()</code></td><td>Caja para escribir</td><td>Número (o <code>NA</code> si está vacía), texto</td></tr><tr><td><code>dateInput()</code>, <code>dateRangeInput()</code></td><td>Calendario; con rango, dos fechas</td><td>Uno o dos objetos <code>Date</code></td></tr><tr><td><code>fileInput()</code></td><td>Botón para subir un archivo</td><td>Un data frame con nombre, tamaño, tipo y ruta</td></tr><tr><td><code>actionButton()</code></td><td>Un botón</td><td>Cuántas veces se pulsó</td></tr></tbody></table></div><p>La columna de la derecha es la que más importa, porque es donde aparecen los errores. Una lista desplegable siempre devuelve <b>texto</b>, aunque sus opciones parezcan números: si las opciones son los meses <code>1:12</code>, el servidor recibe <code>"7"</code> y hay que convertirlo. Una caja numérica vacía devuelve <code>NA</code>, no cero. Una lista múltiple sin nada elegido devuelve <code>NULL</code>, y <code>v[v$barrio %in% NULL, ]</code> deja la tabla vacía sin avisar. Las fechas, en cambio, llegan ya como <code>Date</code> y se comparan directo con una columna de fechas.</p></div><div class="analogia"><b>Imagínalo así</b><p>Las entradas son como los formularios de una oficina. Un formulario con casillas «sí» o «no» devuelve una cruz; uno con «marque todas las que correspondan» puede volver con varias o con ninguna; una línea en blanco para escribir puede volver vacía. Quien procesa el formulario tiene que saber qué forma tiene cada respuesta antes de usarla. En Shiny, quien procesa es el servidor.</p></div><div class="prose"><p>Una costumbre útil es separar lo que ve la persona de lo que recibe el código. En <code>selectInput()</code> y <code>radioButtons()</code>, un vector con nombres hace las dos cosas: <code>choices = c("Abonados" = "abonado", "Ocasionales" = "ocasional")</code> muestra «Abonados» y entrega <code>"abonado"</code>, que es como está escrito en la columna <code>usuario</code> después de la limpieza. La interfaz habla como la gente y el código como los datos.</p></div><div class="lab" id="10-lab-3"><div class="lab-title"><span class="tag">Laboratorio</span><h3>Galería de entradas: qué recibe el servidor</h3></div><p class="hint">Elige una entrada, úsala y mira lo que llegaría a <code>input$…</code> en el servidor, impreso como lo mostraría la consola de R. Prueba los casos que rompen aplicaciones: desmarca todas las estaciones de la lista múltiple, borra la caja numérica y pulsa el botón varias veces.</p><style>
+[id="10-lab-3"] pre,[id="10-lab-3"] textarea,[id="10-lab-3"] code,[id="10-lab-3"] input,[id="10-lab-3"] svg{font-variant-ligatures:none}
+[id="10-lab-3"] .c10l3-rot{font:700 .7rem var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+[id="10-lab-3"] .c10l3-lado{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:14px;align-items:start}
+[id="10-lab-3"] .c10l3-wid{border:1px solid var(--line);border-left:5px solid var(--c-tra);border-radius:8px;padding:12px;background:var(--card);display:grid;gap:8px}
+[id="10-lab-3"] .c10l3-wid label{font:600 .88rem var(--f-display)}
+[id="10-lab-3"] .c10l3-wid input[type=range],[id="10-lab-3"] .c10l3-wid select,[id="10-lab-3"] .c10l3-wid input[type=text],[id="10-lab-3"] .c10l3-wid input[type=number],[id="10-lab-3"] .c10l3-wid input[type=date]{width:100%;box-sizing:border-box}
+[id="10-lab-3"] .c10l3-wid input[type=text],[id="10-lab-3"] .c10l3-wid input[type=number],[id="10-lab-3"] .c10l3-wid input[type=date]{font:.9rem var(--f-body);padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink)}
+[id="10-lab-3"] .c10l3-wid .fila{display:flex;flex-wrap:wrap;gap:6px 14px;font:.88rem var(--f-body)}
+[id="10-lab-3"] .c10l3-wid .fila label{font-weight:400;display:flex;gap:5px;align-items:center}
+[id="10-lab-3"] pre{margin:0;font:.8rem/1.5 var(--f-mono);white-space:pre;overflow-x:auto;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:8px}
+[id="10-lab-3"] pre.cod{border-left:5px solid var(--c-red)}
+[id="10-lab-3"] pre.val{border-left:5px solid var(--c-apl)}
+</style>
+<div class="opciones"><label>Elige una entrada
+  <select id="c10l3-tipo"></select></label></div>
+<div class="c10l3-lado">
+  <div>
+    <span class="c10l3-rot">En la interfaz (<code>ui</code>)</span>
+    <pre class="cod" id="c10l3-cod"></pre>
+    <span class="c10l3-rot">Así se ve (úsala)</span>
+    <div class="c10l3-wid" id="c10l3-wid"></div>
+  </div>
+  <div>
+    <span class="c10l3-rot">Lo que recibe el servidor</span>
+    <pre class="val" id="c10l3-val" aria-live="polite"></pre>
+  </div>
+</div>
+<div class="readout texto" id="c10l3-out" aria-live="polite"></div></div><div class="prose"><p>Dos entradas merecen una nota aparte. <code>fileInput()</code> no entrega el contenido del archivo sino un data frame con una fila por archivo y una columna <code>datapath</code>, la ruta temporal donde el servidor lo guardó; se lee con <code>read.csv(input$archivo$datapath)</code>. Y <code>actionButton()</code> no entrega «verdadero» al pulsarlo, sino un contador que sube. El número casi nunca importa: importa que cambie, y para eso existen <code>observeEvent()</code> y <code>bindEvent()</code>, que verás en el capítulo 11. Subir archivos y validar lo que llega es tema del capítulo 12.</p></div></section>
+<section><h2>Salidas: gráficos, tablas y texto</h2><div class="prose"><p>Una <b>salida</b> (<i>output</i>) se declara en dos lugares que trabajan en pareja. En la interfaz, una función <code>*Output()</code> reserva el hueco; en el servidor, la función <code>render*()</code> correspondiente llena <code>output$id</code> con el código que produce el contenido.</p><div class="tbl"><table><thead><tr><th>En la interfaz</th><th>En el servidor</th><th>Qué produce</th></tr></thead><tbody><tr><td><code>plotOutput("g")</code></td><td><code>output$g &lt;- renderPlot({ … })</code></td><td>Un gráfico de R base o de ggplot2, enviado como imagen</td></tr><tr><td><code>tableOutput("t")</code></td><td><code>output$t &lt;- renderTable({ … })</code></td><td>Una tabla HTML simple a partir de un data frame</td></tr><tr><td><code>textOutput("x")</code></td><td><code>output$x &lt;- renderText({ … })</code></td><td>Texto corto dentro de la página</td></tr><tr><td><code>verbatimTextOutput("p")</code></td><td><code>output$p &lt;- renderPrint({ … })</code></td><td>Lo que R imprimiría en la consola, en monoespaciado</td></tr><tr><td><code>uiOutput("u")</code></td><td><code>output$u &lt;- renderUI({ … })</code></td><td>Más interfaz, armada en el servidor (capítulo 12)</td></tr></tbody></table></div><p>Cada <code>render*()</code> hace dos trabajos. Primero corre tu bloque de código, que puede tener muchas líneas, y se queda con el último valor. Después lo convierte en algo que el navegador entiende: <code>renderPlot()</code> abre un dispositivo gráfico del tamaño exacto del hueco, dibuja y manda un PNG; <code>renderTable()</code> convierte el data frame en HTML; <code>renderText()</code> pega el resultado como texto. Por eso dentro de <code>renderPlot()</code> se dibuja (con <code>barplot()</code> o devolviendo un ggplot) y no se guarda ningún archivo.</p><p>Los htmlwidgets del capítulo 08 traen su propia pareja: <code>plotly::plotlyOutput()</code> con <code>renderPlotly()</code>, <code>leaflet::leafletOutput()</code> con <code>renderLeaflet()</code>, <code>DT::DTOutput()</code> con <code>DT::renderDT()</code>. Se usan igual, y dentro de Shiny ganan algo que fuera no tenían: lo que la persona hace en el widget (un clic en el mapa, una fila elegida en la tabla) vuelve al servidor como una entrada más.</p></div><div class="lab" id="10-lab-1"><div class="lab-title"><span class="tag">Laboratorio</span><h3>Una aplicación de los viajes que corre en la página con Shinylive</h3></div><p class="hint">La aplicación lee la muestra de 496 viajes, la limpia con la regla del curso (quedan 486) y muestra cuántos viajes hay, su duración mediana, los viajes por hora de salida y las estaciones con más salidas. Ábrela, mueve el deslizador de la hora y cambia el barrio: todo se rehace sin que la página se recargue. Debajo del botón puedes leer el código completo.</p><style>
+[id="10-lab-1"] .c10l1-marco iframe{width:100%;height:640px;border:1px solid var(--line);border-radius:8px;background:var(--card);display:block}
+[id="10-lab-1"] .c10l1-estado{font:500 .85rem var(--f-display);color:var(--muted)}
+[id="10-lab-1"] .c10l1-cod summary{cursor:pointer;font:600 .85rem var(--f-display);color:var(--accent)}
+[id="10-lab-1"] .c10l1-cod pre{margin:6px 0 0;font:.78rem/1.5 var(--f-mono);white-space:pre;overflow-x:auto;max-height:360px;overflow-y:auto;background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--c-red);border-radius:6px;padding:8px}
+[id="10-lab-1"] .btns{align-items:center}
+[id="10-lab-1"] pre,[id="10-lab-1"] code{font-variant-ligatures:none}
+[id="10-lab-1"] .btns a{font:600 .85rem var(--f-display)}
+</style>
+<details class="c10l1-cod"><summary>Ver el código de <code>app.R</code></summary><pre>library(shiny)
+library(bslib, warn.conflicts = FALSE)
+
+source(&quot;limpiar.R&quot;)
+estaciones &lt;- read.csv(&quot;estaciones.csv&quot;)
+viajes &lt;- limpiar(read.csv(&quot;viajes.csv&quot;, na.strings = &quot;&quot;))
+viajes$hora &lt;- as.integer(format(viajes$inicio, &quot;%H&quot;))
+viajes$barrio &lt;- estaciones$barrio[match(viajes$estacion_origen, estaciones$estacion_id)]
+
+ui &lt;- page_sidebar(
+  fillable = FALSE,
+  title = &quot;Viajes de RiberaBici (muestra)&quot;,
+  sidebar = sidebar(
+    sliderInput(&quot;horas&quot;, &quot;Hora de salida&quot;, min = 6, max = 23,
+                value = c(6, 23), step = 1),
+    selectInput(&quot;barrio&quot;, &quot;Barrio de origen&quot;,
+                choices = c(&quot;Todos&quot;, sort(unique(estaciones$barrio)))),
+    radioButtons(&quot;usuario&quot;, &quot;Usuarios&quot;,
+                 choices = c(&quot;Todos&quot; = &quot;todos&quot;, &quot;Abonados&quot; = &quot;abonado&quot;,
+                             &quot;Ocasionales&quot; = &quot;ocasional&quot;))
+  ),
+  layout_columns(
+    value_box(&quot;Viajes&quot;, textOutput(&quot;n_viajes&quot;)),
+    value_box(&quot;Duración mediana&quot;, textOutput(&quot;mediana&quot;))
+  ),
+  card(card_header(&quot;Viajes por hora de salida&quot;), plotOutput(&quot;por_hora&quot;)),
+  card(card_header(&quot;Estaciones con más salidas&quot;), tableOutput(&quot;top&quot;))
+)
+
+server &lt;- function(input, output) {
+  elegidos &lt;- function() {
+    v &lt;- viajes[viajes$hora &gt;= input$horas[1] &amp; viajes$hora &lt;= input$horas[2], ]
+    if (input$barrio != &quot;Todos&quot;) v &lt;- v[v$barrio == input$barrio, ]
+    if (input$usuario != &quot;todos&quot;) v &lt;- v[v$usuario == input$usuario, ]
+    v
+  }
+  output$n_viajes &lt;- renderText(nrow(elegidos()))
+  output$mediana &lt;- renderText({
+    v &lt;- elegidos()
+    if (nrow(v) == 0) &quot;sin viajes&quot;
+    else paste(format(round(median(v$duracion_min), 2), decimal.mark = &quot;,&quot;), &quot;min&quot;)
+  })
+  output$por_hora &lt;- renderPlot({
+    conteo &lt;- table(factor(elegidos()$hora, levels = 6:23))
+    barplot(conteo, col = &quot;#7a3fc4&quot;, border = NA, las = 1,
+            xlab = &quot;Hora de salida&quot;, ylab = &quot;Viajes&quot;)
+  })
+  output$top &lt;- renderTable({
+    v &lt;- elegidos()
+    t &lt;- head(sort(table(v$estacion_origen), decreasing = TRUE), 5)
+    data.frame(Estación = estaciones$nombre[match(names(t), estaciones$estacion_id)],
+               Salidas = as.integer(t))
+  })
+}
+
+shinyApp(ui, server)
+</pre></details>
+<details class="c10l1-cod"><summary>Ver el código de <code>limpiar.R</code></summary><pre># La regla de limpieza de los viajes válidos (capítulos 04 y 05), en R base
+limpiar &lt;- function(v) {
+  v &lt;- v[!duplicated(v), ]                       # duplicados exactos
+  v &lt;- v[v$estacion_origen != &quot;E99&quot;, ]           # movimientos del taller
+  v &lt;- v[!is.na(v$fin), ]                        # bicis sin devolver
+  v$inicio &lt;- as.POSIXct(v$inicio, tz = &quot;UTC&quot;)
+  v$fin &lt;- as.POSIXct(v$fin, tz = &quot;UTC&quot;)
+  r &lt;- v$estacion_destino == &quot;E17&quot; &amp; v$estacion_origen != &quot;E17&quot; &amp;
+    v$inicio &gt;= as.POSIXct(&quot;2026-05-04&quot;, tz = &quot;UTC&quot;) &amp;
+    v$inicio &lt; as.POSIXct(&quot;2026-05-18&quot;, tz = &quot;UTC&quot;)
+  v$fin[r] &lt;- v$fin[r] + 3600                    # el reloj atrasado de E17
+  v$usuario &lt;- tolower(trimws(v$usuario))
+  v$duracion_min &lt;- as.numeric(difftime(v$fin, v$inicio, units = &quot;mins&quot;))
+  v &lt;- v[v$duracion_min &gt;= 1 &amp; v$duracion_min &lt;= 720, ]
+  v$anio_nacimiento[v$anio_nacimiento == 1900] &lt;- NA
+  v
+}
+</pre></details>
+<div class="btns">
+  <button type="button" class="primary" id="c10l1-abrir">Abrir la aplicación (carga R en tu navegador · tarda unos 30 s la primera vez)</button>
+  <a id="c10l1-tab" href="https://shinylive.io/r/app/#h=0&amp;code=NobwRAdghgtgpmAXGKAHVA6ASmANGAYwHsIAXOMpMAGwEsAjAJykYE8AKAZwAtaJWAlAB0IdJiw71OY3AAIA7iwgZiEAGZ0CpTrIC8sgGIBBADIBlAKLCIIzkQCujAnHZCatGKlotsb63E5SKAJaEgDZAB4AWllGOCgAExVOADdXMACgkLDOZJS-ERTvACtw6Nk6T29GdjjEvPSiqFLcglS3OWgMQMY+AHMdfTc-ayaWgBJuImZImKhcvnI+uBq1aZgoUnYxgPG+Wmy5NwBSAAkRwpLd+hZeolnZTODQiGvb0OAN0gJubavOcZPbIQAD601oywgciBL12MJIINoCQEAF0RCJ7LQHqgoMsQZwkXAbjURLJZGpaNRqFB6NQ4HpDKZLLhSbJSLRSHSGW4AGr-WQJelYBgrKAAIQOWPYMHsmWYwjwrIJguJDOVRJYrggZLJ0kJjAAkhBUPYtm4psxOB1ZG5TtMoAL6ZwoHQElBrTA+AyAGxyDYADwZACYAMws7U6yNRnUpF2yhkEdi+2ShgRyQJwVAMgCMadZurgdK0RpNZrAxLu1rcYve90FsnBkI6+ejrZ+RAO4X0ibcABUiAkiFa8LI7IwtvYILQAI6y9jw14AiuhASrvMRsnMBKhMWm0gkTjpeycewsUJVsAAVRPZ6HzY3rbbU07g1kPbA-cHw+5YH3X4vRj0CQiR3mAP40sBg73o+MGwWSbgAPIEPMLwugEbg-kQyEEsB1AXBG65ktSrAOKQILENQ9gwBAh4trGlFwCCQH+ukfLNOhI7kP6pAIaapbpKCOzDqu4aRvRspMUQLFuAAIo4zwAM-avA25QNA1pcTxfGmukKneOpYCrqyhFviwCTsMhjAJCC3DxIKJJgGxLSyKg0yyBaDr1s6rruoZcioNQRBaaQ-FuK5jA2faIyiaZVkWWZNl2Ss6QWIEzw5G+JCyDAACHOjeUi8x+HIQS0nAvEhTpbj7qg+HWLYKwpCsDxqJOWgvOwfClnIpGlgIsggKyhZwH0SJDi1bXsiQ7D9YND4pA8QnAEJkz2rIAB8+hdaaq2WsA2YorIABksgrR5kRbcaO0eZwwBBiichog+tBqLInVXaQ4zLvcACEQwfgOoH9Qt5QpMtX21nol2lhDjB3I9LYvW922fcep53LIf02r+gPCadi3g2jt5Q7IKPjET8OyE9YmsgAvqyvU7YJ-LlHEED2b2cDcewECMEQ8jznSo1fjNRkRozn16WpDqsxQHNc1sc1iQ8w3C0OM2I69PN8wLKT9bo+gAAz9W4BLakJwwPoWnD0jiGbsGsjBfLUDjs9KcCqRA2zjAk8nAiCnoQGmKbB4KIQbNQGAbIwADWP4sn52OBwUEa09YZIS+M4WRTMsvsysAAKgWKy2qjkPc5SlXSDvBPuNSq2Nh4CLtUByHSTXUK+3qIKm6c6sSAVBRZJDl3IFE-gAxAA7FAIZqAQAAs1pAVZzX6AAckYbfzDmMWwf61L0D+dozF5LqFdarCHz+TkcX3acM9pn01Q8bMczS1dKzGKtC43GsPqQB4tlEhcGmFsKuLgUiAjSv7RsFBQ5wAIHUM2fQGS9iwJeKwcgACsfcyRuiCBgNQzB4DsFSlkWgSkGQLl2BAIgMAmBwE+JsH4PNYABHYKQYONCAQLkRMiB6LY4JmHPm6V88wMCLBGslLh99rD0xsDRXg-AjDoHYJidMjUVjWDALTXA4BoDwCoJULwPgcD4DLhQUgVAJ6yBMA6OIfRqSOgqB4LwcAABenl6SBR0EJU6OVXTjXiqgAAt6QewvjZCGwXrIVg0TcHQm1FgWQNwbYiBMdUCaEB2rTT1gNVkIMYhgx+r7AKBxNge22MHQ6cE4K2LKZoECOgua1zvBGIpp1wZ8LgdqLGbgLAAE5BnWlqTBWxMAiBFE9FY8agpqBshdHSRghSCY-VoLkaA3sKRB0enUuptj6CSnyl6QUKQiDUCaisjpewpzZAeBIguCEzAGgABpaG9vsQ4bIPE-kvL2AAwinMkUCdkPNyE8l57ytigr4CVX5-1-lAsMqyRgi1oEUIRIKQIfB7gG2xhYbMU8MInSgT03okJMb-UJcSsCR06K3MlPcTashHnPLeR8twQZDZBm9FEQ22D+VL04gi7GSK-DHQZV80IkRWUQvZdC9I3LeX8sFdmAAHBpUVbhxUopuTs4AjBDqg3GAao1sgADUsgQzekNobfZrZbGFliIWIgxRWWkEtCBFxNLCnkxvBjSuFz+YyN6DAeQh4oEUxXH3KBvtmD+0DuCjAEAqIrAOOwbcag1DslIbCqEp1GXfMnByV8bhA7CVjQTONfsXgBy9Cy7Mx1C3xvSqCJNER9BT25QjG5alQggmgOHWgszwb9qIIO54MyyB4v0NmQZdrjUxE3oUkQCjdH6MgOwqgQk8h4EICPKxO6rj8NwNKoguAdm4HJRCCg16YF1uxeyOhuAjkhFPeyVyTFJS4GjRe8dk7h2zJENmO1dqgwL1wMqvlhsQz8qbYbQZiB52IGwb6aD-K4OGwQ0hheSGQyG1wBYUMRGBW4DFNmb0gzcDwAIDlO5rcILQEHFBu1S8ICgbtSGXlrGVWwfg7IFDC9sHIfQzymDWGm3csQIbdVyGgykezERoMCmxRBmwZBwsABLrQvRkK4CYyBXA87BlBhA2BhetreMSf5UGaJcmIOIBDFPazmHbP2acyJ2TRH52kd9BR9VCnaP0YqQZoCzGL3zvVcSjjFmp5hgw-xnlHnnNOYU4lrDdnZOIAXtmUTinSPYPIyZmjiCQv6awihXC4ZOMCqnkpjL7nswL2Qy1sjjXkvNZ7i1tDhW-PkaDPF691AdOetC5VnC0BqA1bA9g9VRWOt2a6xp5D6rXNJaWyJ7MeWgzUcJQpwl1G1OUdK3RhjYXIKReGSGczdq5sucW4JrzhtUOEce9mLbDm9tkeI4RtT3olPad0+N7CqFpu3cNlR9L4m3OdanqhoMPc3sw424J+HaGZNKYsD97DA3vRraB2N-ThmWPcpiRDqe2Dod8cy4Jr7MmHso9pyhw28OF6EcJWtwlYY1MLxc4TvTjHwtGZM+x2r6rvQLaZ5h6J8P1OoalzTmXrO0tOZc9jsMNLisL0g8F87JOrtTxGbFu1gzvTU5s7BjzVPkMJel1bxDDOZMc6DFjxD5HsNrb16Fg3xnhkxc49mXlDX7exMh5j1DdulcxOid3bbOXIPEbd0d3bhGBc++Fyx+dRvbvZm4yH6PYe5chgT+trDRee7dwXpr3H2PVOyaU974nmeruDLF3ayjJ2OuxKJar3H3e0dOe7iGLnkPSNrYo75pvQvLt+8GdmXPU8Yll6FYJpDPKcvI8L2v5DImePY8TxqgbgXhujcFxdiLc-sGL676HnfIYWtBjWwP6TArneke+5BsUPKgtlf1y31jWDXPdVI-DrbBWXIfd-MAiA7BEvWA5TGvfzbDajafC-EXQZKeAPDvdVdVSDaA7LEMEvIPFfAVaJdfEvG1HzX0YjVTIlMMVAibMHGbHlRDMTaPcA3vBeRHObEgjgtnJDCDHzb7CfQbfnEbYHZvWfEzLAn-TAkg70GAl7d3DrBQ7LD7VDdXZrUjFzCjUzU7crGfS-KLQ2W7FTaLeQjzN-bBRXS3VQuTePbzQlagsjXnBTdPSQowwZdVY3TjCDdTCwjVHuXDPA+3BQlnNnUfTQorb-DTfQ--KQrw9vHlawmw2HKeQTPLavbrEg9I+PbBJDKnHzDnZfGIorVA33KLGQ4PZ-e3XIog3DAvS3XItrPLEMb7N3JTY7Mov-EHKrKbZg3ldVKPJowTFrLI3bHIp7GTRHbbHzLnE7b-SnOIjPBInPE3QbD7SY9Q+XYgjrXIkTFbffV3ZTTou1X0Bg0HarUwjAxnaPdVQTOAqvVIpLe4rrJ-d-Gg0jHnbbXXHojw9AynW7EMSjEI6PQZCAt424y3cElXB-HuTXY47HI7IPc4v4wwozMnTVE3Qg5fDrcE0DHLVorfaEwTF7ObZDdXH7XzNTeA9w1uRgq47EgjGosE0knLA40Ekkgk2AzzHzTXUDD3c3ZY-4rPDArEzjB-bjEg-E7uaw17aUwfIPHLYQr4j3M3YU9E0UtYiU4TRo2HfE+HPI4k-UwfOEkfPrX7D3bBFzcogAqLHwrjPDajPEwfa01bBUwIlDYE1U7nAbbtU-CQzU1vB02DdVZQ6XUDDI5UmTZ0iM+1PI-DGvA7BY0MIrOktA0nMDW7XLYZFfbbB4nLOTfIvMptN4osxPMfbHfzH4jU3ABk-o7M0MC3NzfMyjHLbufwxrVs2Ux-Uffk-zJ-TTcQonIMv3EAxsqeNgmzVsuTO1aYksunHuHbb7dogbHtW0hI8ck3avb0rsqTRHXlfLPclMRHM0rHE7bHaIjVX4s7FYzw3A7M5zKElsrLQ0rzZ4uDIPCAwg5DDnI-Ks4rKeG8gwjMw3b0bMqeHAvMpbAQhzPU-jL8lDG3WvYgpw4rB-Ws+sl0ZgheEAj8qIPPWPX85DWMpXQi8PRzLgojXMuvAbQZNM4c8-VAFYOwBsk3KncMsikMQfPDJzeCz87iwI2E4oorJEgbc09Mio4ZMzdih-ZshCivR3XEiMivG1GTUSlTKggbWYjczw+LW7WAvnPMsPewnbKclskypHbIrXDXOihis-XoybbCgy6vcyhSqM3i5SsinvPLFbQo2ig-dCr3NEusy4tizjDTAHYywTGYpDLQrsnvA8ogt3US3Hb-PQ3SjErjFyyXaKpUgjQkvKxHLIyzUjQ-K83Mi4vo5y9iqnNyz8nvCgkvTi6cxqhPBXIo1U7-WDWsqSrwgy70DChKqYrgwq4ats2Ew-P8r-bbQjKqpy8HdihdeSz8jgtrWU0i6cta+E1DPbTSrXf7MMdMrCxazjSXHjLs9IlXdQkMfColCA9ndSnzc8nQyHRvEKqSnA27b0H6u63Il7Ua2-Mi3IvLOcnXC0vPAbbBQHRixypg76pfFk6cuonawoy6gs4TZU56uYgbXCgMkc0K6q06s47tTkls5o5DVopG8m0YpzAo0SyGwlL-SHYC87E65g-HCXPM3I9HQ040hC3I2cig+Y5wr-FTMQhyirMKmqs6tvfmz8wW1DPLIG5GnfGJX88fHGyfX-W8kUq7MM27JffvCM+48PckgUrs02uXOTDCtCgC7-KizKzMu1Q22Teqgi029fAQu6z2wsjWz47HCfZrFAj6u06Sw20Dfij2tk8PY2si14l7PPD4nlPrdK1muGxkzjerC6k2mK53JWvM1408zIhm0uvHAnWGqWom5gynQQrs-ExOrbTalshu9snLTQ-k5mo-J2-WkMyczsiM-Eg43y6mhCmU+TNXBAk4vHCWwM0Csckwk3SCvGxrblIit07zVe+1a6g8w-fs4rE7Huq-Q2s3eWqINepO1LXc6XC+kvSzIfArA63bWegm9m27MMuOmzC+uXHbZ8-jb+nLZqisykzoolVE3W0cyo9+0MlfC+2c4q0euDOB7rGTag-a6kolboiB+ekzEMsM70Mm-++Mm2uKs+5B6GtLMqnzK8u1XqsOzA9+yjfC13KMsG5u-+0s5WuAvbAU2yw6-G8-N+k3EA+fWBzhtu3LMRvOoSnhv8o7RDd67BoRzjCXLyr+pbbgvfd2lTAs+PW2xmtKmJcBkCvqm7YR21P+pBjR1DWcxB8+pbCg3DP86glM93ea+G8xoC2BpbFrW61DQhqx2mm3avLS+29TF+8-X3MnRelRyndhwJ3vbjdu7xxcjfHtACp+yGo+7PGQ5a4YtzUMAskfeU1ewSlrAk3h1C4g7-IlTC6W4mxDRDfJ-+wS4fG2la8+1p17W3UJlwgVOakK5R03V3MhwSuTUagjWBwS9fZWyknh5E4s7J67W7Uza0qZlMMkkTSg0plMZW5Wnhg7Eo5rYx+Iy-Mna-E3OW5ppBnvLZ+m2B25jQwsx+rQijQaup6ulZqnAJ8+2JV3CPPDB53Z3fB+znbQgbWhpZoYlZwLZh7a1LY41e7ajHKiwlDS+vf09xzO03ebeJ8+jgjs08jp9TQTNphHfrQ7NUk5u8gE8U7DHlXzVesIsk2cqO3lVh+HRw-844xY6lquhambUDQbYlsIu+gQvF9lt48pv8sutTY446+pwVnlQZa58+sI3smM2B9V9k1rD-LWoPRRkxsO0zczUDAjbRsIrzOXCVy1pzO+9XEjMSmkiJjO8K+lzA5himgqnOpXQbIJ0G5M5wnQp-X0BVz52LUDCXVVv1xJ0G7RxW94rQwOvkj3ebOhzcmSyOxDH1r+hN8p6NxW4p-arlsWo3ARml0Ur6iNoPVnWB14pq1DbR+t7pwgiGpAjCpZ+fU1g1ptjG1o5h149aj44tkQnjSS41h07bdTaNwd1bRtut2mpJyZ7HLHEjNTLx8dzcsxyOoPXAhdrrXCkpm+14rzYqw51dv7UDLBo1hI4Zbt+LM+gjMgie0A6XJ9x3NS9J1C2tuVtwyu0csndvbbSC-Cp9pUx3eAxrMD4upzeYkB1N+gwZxV7t3AyxqIMDrZ08uxjDpWpzCs2Vu1YKpR5D6t+bDpnDkq1VsDjsu+vsrqlTP9yW+kkjndiXbD+Mjs57FfajyA3rFdrWvw8tvWufbd7DblIat9+MuK9fNDsD3Dbg0fUfWgqKqFrAmtqjbjhDOPPfcjrTyPTHFNsFh2nWm9s57KiNlTIyqD8RpSqj8Rn880sFpm7Xa9tmljsT3lH54EqMjHbZt90smY8pw5kW4rQbD5gV014V+CheATXvLrTYxLGL7DU01oz-PV7-fwztyd3bFelHJLrLG2x-P+-Ljze+7BP8mvK844ztulvPHlYrprRHFXNZxLxrymhnIQrWyHVzit-Wi5yO4E2t1rzrLRnuBrkbnLGYhm5w6I2DEztz8Ngb4E9hpL7iiigQwh1boigqlOmy2p3QxD7BqS7U7DQgp-dbLbs2hzZ4y7zlu+xPL95Esto+850126k-YbsPKvXx8br7xt55-j5zijJfdNzwtvN7ynNypLxK3a3ai71fJO0MDqpPahwCw7kCoZ5rPPcbjg5q0h+H0gpO3vfwtFqh0o8LjxyOrgqU4bjg09u1gnunvimx3pkQ2trFt15rTzxnkahzeSpLgludypg7Nd2Teb3rsc8CiN6vIbvL1VQfSi-n+X3vcr0F4t0B0qpZn601vncG4bq63DA45ppLg36MyR5NsJ+ioT5jxb7DPDdnAnnm1XYs-X10os5MmvFPXKzdsHoD8roU136TJH+KuX1nDZtXSPUjQ5lPPQn39AhdU18rtN4b02uPOPfmpL1Ptu2I-bfrNTKUuPyt0Tj7IPJX2TCEkvCYlPxQkinzQ56slV0H+P2r2A6Ggn14uPbgzb-lDviPxz3zSlgLG0pD23j7G1UezP0lv22h6v3vdWpN2p2iijc7jnmW7Da0mf0PmE-DfDaL-lbf-x-x6i77AcvG9M5ixgVitfyjDveHyM2Ovmu-7ezvyb5TEX745fF7wj0121B31r+-vmhSSf4QEkePBGyinQow9UoWQHCxhnwIrb14ccJXrP-23qmUgidfN-muSHJMccGwyGAazm74ADCSR5OXkQMPb+V3cybN5oa1OboEq2kdc3GWxQFT8k6kHUgRxwpL+0ccnRJ-C635aU9sMBDNRkKngGLkVMsHYAYEWBIGcnOPLFgk31FLa8I2BDHgswOkwY5kB7Ak8gC35IEcU6q-Ymkw3aykCcMleKAiYJjps5PeKbCjDwS-4u1lB+OY3gRVLJwF7ud-Usm1nXypUPea5RjnPUx7ehIKe-bsk7jroWC2yBVTYr6TQq2CiOGPdzpRhVbODEKrRIknfyWy+UAa32evsVjWYGDBWS+MLv-x8acDamJQxdmSWKLJkKq4vYTlFlq7dpJm--NbogOLx381u9hROi42KIDlu6odW9jE2wyTk2iHQ4FtIPK5jD-mn7SIulyYYKCL0r3CNpgUZakDLK4g6wnf0sqq9BChKN3Dzldwh0juxrKXpHTDJDZ-+fBGTOMyh4EUrhKGEno4TkFhdoBprEAjmxEEfYxBvlJXl8MCKjVwaNlZ4XUMgZeEF8EbXArmX-5hE5cL2Pznxhi6UZTSNtVKjXleqCF7BQHbwjT1IG5FZSB5BrvdTn4CFnCaDUBnIVU5vCMChAp3qljRq4jXSLLClkfmB5HDTOdA04Z7mGS3CiR6OcZjdwIqK11aExDJt5goySMoW4IyOiqx6r-9m2K2eETBkRGztYMyPZfE-UEKF99atXFVi11IEnt2urbOUVMQKr+VuWqmFTKG3-a4D6ByBW6oSINF6MUhBo00cmS5yaU5WVonAZ9R1Ej4QhBo3iud2NETViq55GvDzgFTp1+B2LedDrjgEapFy6hYTHf1eL2Eiyq5JfrNQWGAEhh86ObCkPxLFVO+d-fEs1V8on9UeixYfscM3I6jbUPI0sTtVfYIiCKjYx6oiURIuEn8aea0ZjzNyN9-+Q9J3M0NIFDi4S6DEXn9lZw9dhO0TU1hgRD4tj50Jo7uLKNHFTE5S0QgfmlQ1Q0DXW1-LwmwJbFr1YSO2ZwSePRxeYHuIlY-BXW9EAEycxfYZC1REEnj7CvjAUW+Nh77Vi28jW6tmJMxSjkC9FFbufXjJwjOWcAi+mSUr78kZWB9eIQtwi6xZuU8WCfufVLL4Y98UEzCbhwMbJkLRuZLUYAVE7coQJ8PHRuB1MoUTrGV9ZMofhmogEKe2LMiRcLl6UTiqe+c8Q41txH8MmrzbbOjyQkCDWJoEjiU83CHHieJ2GJzDeKX7qZqMxEhoeZldzzo9+lE8ZnASV6UTSG8mQziyNAx8tQRto13LhW0mCVK+TXcyRjXKbfZwxVpKMTb2QlCsiUzYpUZ03vyrjPx0zfTrbUrI9VdC1Y9kZW3byu5MCtwiDBAXVoviYkvzEAZy1HwaVvi4NTtpmwZaBZ0JkUlXIezXHHjLKjuRmrMVJ5qYx8ULB0q7lwLniK8cpEjK1yym2NdWKPbHDoW2x7j6h3IlSX4Sgm49N8R7Y8T1J5JSlLylY2DI5MJrOSf8aGMSRwSLJs4GuJLFDHowrL8lkS5pAoZ1Lmzd8SW-zVUbVPYngEdp7gvbi1LTbrSUJg2dUnVO1Y7DPxtrRJsUR4Zi0uaSkrwlgVDCIZMpitJUkePckxsHM5TCsntR4GjCXpk5FScCRB51Ss+0mZzBROhltZkyQM0LjONBFUZwZuFeaa8UNL7M4ZCvK1lH2npigCMPY+8be05GhgAc2k14nFTvrnjqZPcOCsphdwWj-SxEx8eDP7oUT8SvlETICzqmFjOBXLXoVDTvEBD3OoYD1lzLzpylVB7Exsdlg7H0SPcmvEfhNNDAS55p+JewoaQilazZJu+KhsVKJQgibRaUiDDEm77vs4KWNVrlbN6mUDv2M1FTgMLM48oVJ7OTQS2LtmJsGudsuUpQVz6WkMuAzGsWD3Jns53mts1AXa3ZLw8-Zw+eyc1OKxQUoWQwvwj9JEFgdOWVeOAVnM4EO9AqB1C2QBK8KkSuCH3OXnnMPKjCo5yI1-oSmKJi0dKLsugWXN2zOC85P5PXpXPjJs5T2ONWIcTOt7z1MS7so2utkFTJcJqhXCebFw7L4imZqdQTi9IwLuycC-NSebhL5zoDEsm84FnOR6qWkg5H2NkcJJYn294Kk8rLPhjlx-0r5z7AEYc1RHkYh5YbNWdaSWK7zV8SlJQs00nlh44qPM8FoPwFSnyJe2eNOR-Lcr-zn2Mk2Il-JjyO5ds1lf8iURiSITwFpclSdaTbyzzEFBRXynfIR5KE2s8HJ1hqiEmYL5s2C0+ngp7xV5OWRCmPHPwoJoNA2apE2VEztRvSAcsMhBeAXDxxdCGk8gRU8T4rT1iMBwzYlCzpa8oVM7DERdbnKbQL5eBUzIjw35IRjG+Z0oVudRUWQ5SuANJhaoXXyyl+SuQyARgvamryUJP1C2ijknlhFuCzVYxboy2x-lKSwbDdr2PFlBDcufGRxa6S2auK5+5TVKi9WPz+DX6viiXPJUnlXU486+YRfygSXt0GZPmTQkHXqwlyJcKkoCmPgQVW1RMPcZ4pPKKVtF0BMQ93PnyiWRNjW-XervVlKU99B82WT2TBjKWKkiWPpCAYhjGmfUzZmBHEQEpaXE9OWl80ZejgKJojMB3+DTqlLyU4EFF+-SwrzP0Uwkba9hFxporVJgLoxbrC6VXwcUrKKmVkvBQfzbL74txwbJiWzKzIoSjcYZc5VGWQW5SOlJy9RXTUXnDSqxOStOR-VHqTyBZ11DeScpmJwFR855aIoNiOo+Lbe3Yq3ggsbE1TkliGWmhBxcY+CPcExewbIsCwDjjl9-AQpX2SX38HM741HkXLIw6KeUQxYwSMsjIEkN8KtVVKIIJKY0v2U1ULmNKGaDlEVhK+Mlsw7JELGVvMgGhWRSrFZRGSzSCipPmxWYv5jKoWpvlnlKrmeF5Etsfnspz1TGcqzAqStLJs5E6yy1sujmcUEynWvKPgaCIT4oTTMby1lYhSrwFEVFiFXmvCR9KzFdCKMked-ztVoZSVglVogvMVVBqEcekhuVpW-xDFmJBy0+oGoxpxURVZTGMljVJ5GdxMsatfrtn9yqqe8PWO7nmpGq8yGamhFqTxhpUEYrVqqgRfhgTk1qH58DDJQVjUzPS4VE0gjCPlBV-DVxZ4htZELgJl1ipc3LNcTU7X8qGVgvQbEf0VX3DVxURSsRsWHlDMCMwmE1VcMPZGjCVM09SmqIRKXtvCJcrtrFgIzWFSVB0pQr-QbXSY2yW46asVm8xQsGlBGbOqqqcUT0JODK0VjJh6zFFFOqbIKWfLdYEYF0gKgimETjzNVmlSIy5YFynqD91MtS-cWOuzYmqYRu6qzoSvQ2X1+SlJJ6V6J1Vh1vC5mQbsIIFSCjn2XWT+o6tN5+NAWYlY+bDIWUnqr2EyokcrS+yqqQa4a6IbWx+UECj1aU4EjWy4151MaZGtVLkS77WVOxBw2IncqAIsbCCf86OtdS2xsbyllfc8rMO6r9KHx4GEjc1ngWEqDRQfE1aZqeK9MLR7zN+QIOBLQ1zNbvXVoqtTEkV3SgPOQcQRlWcjuM3KZpSeNMXksv5AW1XFUzdxIEY1ULITZaLiVgSxNuGFTbfR2phd01mxcUSbJXXyKJlF9MYkWRUUX0vMRZRKZ1xKl7KnJdmiDExOC16ck6MUwVCw0EU3zNaYTLJi3K1JYFuM+RMDQ1ocwvZNK1WlLPJ1Z5Q0YapM+8kBO4x+LZ5LDcDqDSIUzbd6LPJOT8tQmjqZsOJXBcFoK7dN-F7ynRkpQPJQqW186IyTaOfXAlJJe26+Z5hKXTbrt7YzJYTKx7ZjAOJG7jBXJGWUTZSvM+bUtjfI9wlZlq7xTgJXVndutf2+2eDtSaMzKWgVaNT6s+oTblNv2niogKh1CUOy32UtQfUoWzi2Mb23LMkp0k7VSqW2nfNvIDmOs0qq2zEW9tgKxbCmToneccsZ2+VWi7-fVpsKy5vaAc3Wiya1lQbTb+dfjI4pKvz7WrcBx6s1m0UhrBaYeG+a+p9ph5xd5i1Q7FWVptE+by5+WnqUqXKEs6ep449FmTxKy4qSNlmSYcFrsLTEJBVuywuvgema1IBemzclru8JE70NuWDqnbqEpccAqEA9TNquiW28H8beebWEX+m18fdmkgHrXjkHelO2Pm6GlBWC3-V2uu21lTGz60JbOusQhlmtpI2t95tTvZBUcs+1CiqhFqj0bBkA2YKVWhekfMXp4rfbptQo-DBWRF4a9cdAHP1Wa02lE6sZ-3P-iztc0OFwt+rJYjKtE63V582W+4jepJXTb59cIrzC42+wnSrFPe2TIXrwHTaNlS5PDnvpSxjEO9PmMWlALa2LDe9sGAHKTpZ16z1C7SzPXrIc6HMHuPAzUdaIGUkbBqC6WeWBzvqnkiFYHMYi3tS3QramlaoQcAfjKPEVVX8kA0L1P1L83qBek9ZLihHHLvOB2oAQgdMEFVUWF5L1dtk33jS7NP1YZe8u84Ek4SsxPA6w1XEuND8nRV+V-onY-6JcyS6gy-wKVYHSywq2Pc4VoIr9VZ5BnAsAcNX51W2Z+3AKmwy3udnMt-RLDBgQxtDS8yhgTNlmFEM01dNJJDe1OI0nql8mBvjCoZjp74-6Zhmg3CJrzAMPcrbMqSRqAr0jTD7mFXG-n12uHksKuIPgzXYW2Da91inzUBQIbrYYMr5YpZbpRzhGQBVeQHQFKFZHrn1lOWXdEbcM21F9Gh7w+M2k6dUjZDvTtkMOcxBD5KMRlnLzPYZlGnGQA8AfIz-0yKnD5wsIzLiontlmjVuJUuIL43bjmaQ2StY8ueJKjtuiAwY9-KryriHuSstTF4WHmfUOtuBRcTBg6VslxxzTZY9ySTUWke00a0g8dzpYj4dclR5XuCuuHtGOCp5CggzQYlWkQ5CQkPfNkPVZGrh7xPUV4auFukKBaDGalKUT0kbosk5do8yx1ab00jBisfSgvPIzVesla7woi1BMQa26LKyHPymw1eDDZHojVIEeMn7HsRblJY+TvFWAnw+eRELvbVZy3HaBopM3H8bbyj0YMV1RAWSTxMpKHqcBc8jNwhanaV1pmf0lkehkkj2jWffIpHxiGCEAjgmkjSqz-18moyfjajcifL7x4vd9Gog7NwwI5KJtp9NYysthKMH2j++sGueXH3rtRZBNLhQ4NAzs5IcdJ0QQrNlLwU+UZKv2oiSKk-tKM3e3AYCVizs4IMzJxlVXibUaHGVhpe1s1tF5eNO2WBdnG0VKNsrAF4ioM1JzG41GqSr1QFsxstOyYTDSxgiktm+6260jTqmxiquIzXGamGu800MPZwLojjRZ8kq8ZzNur9ZYAgfvt3E5JHzMuWWDLWbDW1bCGjpsNRUs2F7DjtowrXnSy7NsTXDhFJUhyv7MEVBK3BWUkwZbWQ4KTVCh0pOe1MznOJ2RIM4uf+58ck2hjKzI4e9NB4M5yJ5rGyRlnbmfK+s3jRpV6NYnfV2+884OWaPXnZzytfmo6barx5KmqVeRlzXsENLcshBUY1+Z6xx4HTBFR5hsPdE15TikWy-XPjSmE6Rx05gRdjM1ZBnsLAO8Remq7HZKXpW5S0x9m7lYXG1QWwsxwSUJYdDOaC0I-YKrOUYoqeFqYt9JtN-C98SSzAYP0tNoHyL8Wbc88aLKiXUdpeDJtsZ-wanOzUWbc6oSmV7nCz1u9WnjWGl8MiUux-Tdhk7OPjPz1upU7BaRFtKSGymQGcVlPOoXlJ3p5VLGdMvXdcDql0rm02+VdiQZbB2fK9rstsXDLtNQIv1pcvbFrWue6kpmppXU96VjZiPXOyiPTnYrh5c7hb2qWs4Kzul9C02V-PgbFyP5PaQlcXK8UjKpZysX5ZYv6XcskFhkxPU2FBnqr7xSnbobE5Hr28XBcrlVbzqftazUmw-pML25ZKPTQzNqwl0LMo0hzHV1gTtm02rnzCkVxDRNd8aca6rQTNrBWTQZ-Z1Mppupd5buz6WNM3Fp3rtL9NO9Hq24h1hGLHOoWfLlpi6dlYTHZZRqIJ6c6bXTG18iL9edcjZcPH6XyJQZ3vm6Uw3PXWlrROw2E2pVXXr91ePMZ+f30AW7r++oPn+VHyn8trVCzkdXggy1nuZkBWXtOeBWGlPFMh5fqQaGvvdYzF9bgiMeaNJbphauskz8dEPYtXK9i1wzTeXPU3YDwJlxohYPo8r3O1eMMqMYAaqjN+rN3uVZWTEBUDJ9Rxm26x1x54bT+25cwZw0P7bDSQB7Gigc+uhz4+m5rgtmZRP2NpZLq6m9JOlb8WxTweZdfzZ1xwnWbEO1Xp+pzOUT0cvjN3DpsGxB7trYPICTriAranGd9hAotlcDuwcZBcesWppVBlVncKT+5E1lLZzD4hbllJCqrsJngYclUZvDJdsNuRTat+PVW21QauUkNKU4yAxDb0venyuOd+Oz3ngYF1C7uV2UhVwsva50rqxUTsJgUbU3RFftWq2kZJbuG0dGArWzpdvZgXoaZe52-hb8YjXWbAi+wm4NbtUD6WJcr05aapyQyB75xg-R8Pjs73Usi-Q+WKY1SnafRnZjTFvfntiDYqPdxcqrz6uM1tjGqeQ7b2ExU4jj20xOqeSFsXq8OhVWHaLxSlfXbVG9ghoraBObr5zkrANqcc0tpbNrsxsOoNQvtt4A7PVuEsPtZs9WKGx94ot8Snyy21+lmZItTYpry4M98dimlkUrIarXqHbEB61dtSbaB7eIumszuwdT9-Z7J2ZWcQlPenzc-41W68X2bwGB7IjvvgiRqFBUj16N83MmOEeymBClh8+hI+FNt9nOKPN5uufamyqBHhBWC0-iKbrVqbzbR6iqc0LVlFmID9C+dU-swlvtvJVWzCQJuAM8jY+OVtgMI3j3Oz+OF3mkbA7GqxHrhwJwzMqWOs2zPBWzUzc5rZWADxSmu3ynieeVUqqT7Si+aGvdo3JKS2LjtnGaEMp4uT9qrDKPm9LWtOtytuhe7RBW+MhTqeZkTvr806n4jDek-KjXco2p5Wpm92l5Mo5mnBZFbEif6fLYZikK47foKIfE0+cu2Z4sM8K0FnansXLbEue+XhWULFT1vK1fiy7E+nSz3Dlg-pNzzd1VTQ-CISMoKawLaE+CsM8QEHkmnsXG2n1pcZlruVQlmJJOUod1Ptt7xGu3U-50sL4NCRlORXc7uYEe0iWL59IwoLXO2uUQjojNYyf82wyehCF8rgcw5z1sfzlLGzl8HyTG+K8qMyAVxuHOHcKIpx7s9JfEDXTy0qVQjvoZVn5sqwxZ8wu4Jd9MXCPZqkQWuOZiRDGzhep2eiyyzmXB9wk6i8J6hiSzx9r-KwbG1ZVWcArsF+y-Fd+1Ujwr3Rm5ZKt8MBUXJpF0bmaZ1PddxVdhga6KZkkXnWluwV9cMOWnvCKdMV4L0f2zPleVeBp-pIOHJjonctmszC4MUKzTyblOp9bukGjD-dIhVmV5fvITnTMe9wN+isZlivtW4gguReR5YQZYVIO-myqyns5OwTiAiggU5ROMjw7mheRj9Tkven6KlFkl1dRtrW0lXpvLQ5Y7z7dmj1VZ+iqEbFem9N1+rlkxByIKHM392lOl7e07teEY3LSrQzJyVcvWzBTw-dR7myUNGK30WUenU99r-MXDJL32qlnN5x6pxkzM3bFnK5sZp3LA0Gvc8VNx5eyj9AKQKg9N9U6W5XB-E67RVtLDtSrg-urWLKlPCJXtuve3nK6VWP3eddWuaTFcCzHMX7bmwfU4VEbH3oCi93rIPmruTls5NZd8rkHwFO2oncrrXXZdkDf1+H6OXSM72t2amLusHg6WhppWiPYg4O7R6kHNVHd9tedDo9BH6Uj3F5gNy4IGdtYnXrZbhpTRkMHVmsg19zpPZmOovWyTdGdbs+k-JnWzzzjhbI-MzQ1bq8lQpzORjmbucnWnoqwO7mGTDO2AH5rJIyk+ZDYenz3M3nR2mpUlP0axF7b2hpNL8PrQ6MizcOfkU0BQ01BTNSt4yrH3p9jTwudpqHlLzmnlNUWyHXU7yndxiaVTjJz4f7zyp413BZ85XuXmLUhh8Ryc8qYhnaX2rXLmC9fmiCtjSlWgojNWvH34tfj-Qt6n93FnX55W4v25aR39DxkgD2YR7dfnOWKzqTz3kTuH7JFqdSjLB9rGqeIMxmxr-hZV4wuvhwlPiUfehXhvZXWpNKd8zjuaf8L4g-L-N-4ISDC51S2MTkuq+WY5v23vfAW72-EDl2rpiMdreCmt4Gl3zAldN5gIhq5PC99rnxt2G9LrLfLkzOt95S8G3vKu55lJ6uHSDi2j2mpmx8l3Pfg8xX543HhQ9-DEB+GeYk+ahqKSI3HIibz9T-pbfCrfXz72rT61JkuuuVKFpyLqqXS5PqhbTkJ6k8M-Jub19JpbchZVeJv82fjyYrDtBj6fD8yzXbV6WaUaVVOHAt17CI7ZSF+H6X-V+TLwTW17Xsg9iwl8ovBfeRXxsV-fWzfm1vpGkqNu8euygftJuX7TQp28--WAO-STwMmGkWqPzJVLzBsj2i3PPYRdfKeRdx70-SqN3Rzh-s33OkRr+ILub9fwFEaXK2s-rj6pM0-luc31JdIIOe6fE-sIi235-vf0MA-wJK7zW9ne5-SucVaDyVd0Lt37y2f9U1J+42Y1MLnnjB2mMpVpbtLbzwylusa8o1LlqPlGo9X8kuM7fKv7-Ue+cxCvPPRdMwYqN09j+5Sktn8fXlxzi+R8NcuT6ZpBv4eAx+bG90HV5ePexyWBWAgukJ+tiPMSbw-8uIVkFElOZPATUu6vauVuP0E1XPlcOcP+dchFqktWWbk5f4v1ebJai5f8l12XB-woZzeI+wOEy3FeSo8+cRYxycetG3QbMYAhDHRcAeFr2DZwA9tQEFL7cF12dYAqwmC9YAwK0hMl5KKlIsgJS+wVVsAxAKeYyNQpwa0i-Es1bNoVf8RXkhhfa0r8KAlgX7dAA-gxu0nhI7V5wvHM0yI0APJ0hQ8Zteuwa9n-Usi2UOuEXyvJ+hAH2GRH3f3jwDcJQRUP8ZtWCnyxC5MUyzM17Kj2ho57Z-yywc5B+j-8Ijf4TJEp6OVjh9PqfQI6dAAiI2FM7XbAO+c4Rd0W98IWTp0l11vDbwcDrcOETwDrtHwz-JpHdLRe1r9M9UjkXA1JkyJRApbF60vlfiWRIJREBxYCA1Ht0KZspHrALdMg2ciUIdDK-1i9KTK-Tdkj3a0lyo--MNQxwBfRZ0Z0DyBv39168Qhy-8MA21E28PJcQQRZRA7imD4ivRv33cxPJzwsYnXBOxkwiCEYIrwJqDSkIDW1P9wMNH3H6nlMaA+4XGYYXBaWLwhvF0yDo3GEKiQghgoIVS9JWAGi2x7-IE3rNS7Lqk4wW-RGnUC8-beToNsAtPQIIXcfkmQtM-cbyPcRLPAMLYtmDINyIZmdzR-FL2IzxAcqPICg88YAoUywlAAopTbJv3I+y70clAD3CkMgg-hod7nXbCF8xuVZxEJW2F6QtMBUIYi5pUXag3qIVbXZ1JCUGZKxa8aGEm3E9ODQhnVRNDZuyRx1sJkOS4fDLzHPIXgnHUztVPaLEBsYMdkJadE6RkKKcVsdUQX4ryAE3F88mNkIecSlV-kSxhQwqz4tNHV5hiRX7eL1MwqKZUKaxhaG2RRx2QniWACyFFkVTxrbJz2pF4KdkMEpMOMYPlCOjAQ33xD5W9wcNJnGbFtRZLPUMQUNg-xz4x2QivGQUA5VU2VlHPCaVtR50eSkDCMabIUdD81KQ3vUV7arg9DzMW1BfV4whXhcVMwxJnTEXmO3z99jJB0nTCJ1IUIR5xmbgn5oYwwInNosdZtQCxh3e8nbw2gyh3ZD8LHkngDZMVRUedyWIi3kYL9BQPB5YsesVr8e+ZXkvUEzI0PHDd7Vdnf0-SI30ECfHYcOtN2GNsNNclyR0IGlmqUj2HVKvBQOtc3qDOx9CWfJwLFDfXRAXPd9fH9ho9qfNMJINVwwt3A5fGNynZDv1GSS5YjTA+i8ChmW-TYCAw3tyK8nqH0OqskmQEW3EByGY1Is6WAHCT5HQ6qxr8qw3t1nIEZdxyQJ0zCu2bDMGaMIncXVBuynDFTPrTFUq9Zmnn9Uw4cI1QU9fCNnYKlSgzHDFTHrDuZ+LNsyeVSLBpXNxIcP+nZDsbTyhfCPlcNV3cxdewLPNDJVSU4iTlIBiVD8I-EiHZW2BjS9VSHSUTTCVMeUy4igmJO0dCxxUr3ccRCLzTIiRI2CL1CiVZs2wijI5ClsMndCKz0jIcdTHYspwxlSXN0lQyM5t1CSgVdCTpLULBxZAT0MGw79f8ODNiBXULsjiGXiTWY5I74y8DzTICXNwcCZ4iZD8yM2hP1ZDfjjVIx7V2SijdsDtzsjKAnenlD4ooO0oZNXEokGxCw182gjiZXiPiiZOBZzLDKo4s2HMUAtUj5tbeQalgwbQnjxoNh8EyJs4nnRv1m4QLKyJajaIrsNbIAaZWgqjSyMkiAVC5fblE83nQagBxEIxCkXt3SQyPiD+fXITz18hEBzYibUJfz8i1o00Qqi1o1-07FQgmvXCDSgwyRHxKIvyLW5giFS1ujLBAqPSY+mA9ytcdosUlyiU1adT4U7IlNVGp4CeBw2tP9DN2aicyMSJnNyCU40MifJWrWL9qlJ-HTdjfAEjYidcIRzsiBvIXkWjMYotlHxD8FmSRjFw+8jSkCGXCgqi67MwSm8aoimODdiiOZmxVGwuV2gjhMX6L8iZvRJVyiZ7PfHdsibIlDh8fwvDGJcxwni2dMKoh1zGj0TUBmYtUgtMNgIghXKNSUMcFSIo0fDdPkBd0RGwPoZmw6wj3ZDIxWn08FYnfCVNzIozm2xGYqkyijbUJ-2FjB9TcQqjXNNpWY8eWEEgujRORYLjs4o1zWD4HwhMQeE98f9UjU3md4LB43YixmaZPYwq2CVco+mTNoa8d0QtFCiC5zTDzcMt0MiEbOMLTjj-e0wtI3Ql81sDk43bDaiz-GPQeC-I-fQoZHhHhzmU6Q5qMGo97OKIP5BpEyNbpMHBEjbi-SHH1BiIwwakFDhY7GyExFo7GzUpUFGZXz4SZZGKpNmw0mKLihxGqWbip+CYQ7orA5VjmjJcRXRqiDSRE1HoG41Jm6EIaOTU7iJ43umTjYTeUIvozKScP-Dz41nw0sqSWbnkC4vAQR+pd9PUIK0dWZPy7CL6YfDrUc46FUBZPXNfiCFdA1+PFsvdEHzLCAGYJmFktHFEgujoI7tFTipwhrVccmXCBNUNmeDSyPsZqcu0HC2Ih9jajkEwBg1pX49BLK4445t0doQXNMLQlt4jCTZIusIaKZCZtTZlu1ltfbjt45ooCinM0Ei3wzikEzwX05fvMMRFkkHTcmbDIKDTlfjaJODSkSxNG2lFoStRDVES9KaCLDIJ-T+LzNumGpwgSIdCagvY5hbRStchhfHAoUz4wcwPIHwuoJt0RRIRNxpD4omLoFjEwLAhDP4g80dwP4phIPNS9UfDrCKMS6w2cvIqLDYjAsBRyQT+dNQgIT+dadRei7PQClINAIW9iiiiQxCMZ1h6WTyvi7QiSXw4CZN5hriIwoYj-CIErpneIQmV+K6YbpCRQWJWcPJKfj5sZwKvigwzIl4jRggGPhiu6Mb1dlVEubFoT6pWdxSTLKPxlCiXolqS2j9w4sMFdYouKRup1bM+Lq8PDVdkHc5lc2NbwooqUx6Sd1QRWwiFpclVjlNXZ2IfjigwAlWSgPV+J3UhKMUO2TumPjV24T7TLhljhwtvFEZTk7QSVMxI7aQJFw7N0Rc4j1YsMeSLkln3Ustklnzhj9JDFmDj4+N2LNxWwtVmP9fGFJOt0wEi4OG9rAnJU5EqMIBLPi+fIPh6SsUpe1S0oTHV1t4ihS8yYTuNH6LeTuNCpW6NT9QKTecl8GXTPi2HRzFLiIEthy916oh1hmoZQkByAkl8M70ZSeKcph6SneN0ip15iZEk59BwtKSXxvmAVMCs4qSDD6xGo-h1AwZUunyvj0iaTHIECEzVNBowlYBS7Eo7GPxKChhJfCNwLk32nuC3khOkpjuXDUNiIaVRGkQSr42dkoprUi3wrDl7AyRB5FI2LHqwMDeUOwNh8Xr0DS9OcYikdl4xdy+sGGP1ONkxQ7AxxcSBf8OwM0PNURLspVM+yI0GlerCaM9QlNJVcxI7AyTU3HPZNOJ3mKFlE4c0ioKnDqDD5JrsmQ2tNVxSqdUKQJwbFoOxYc0mNTzTXBGq0LSe0m9Wm56wwSTQMN0AxG3RkAHhD3QLEQ9EoAJ0h9ARAkQXADoQGEOIFfRawXAGpBSADdJIBcAZCBxAQgN0ASADMagHZAIkayBgAz0aAHsA+geSDdARAfjiLgoALxFkAAAWSgASIRgFwAAUKxD5hcAbBAwBbqFOiiB6sDAAMtwXanCww1UC5looAUSpASBmAabG-SyAX9P-TbqXzGAzswDAEqJjMZ-EVxIMu4XvSeqIwGoBkIagASBQkVuCQzPUC9FQyyY3AAwysMjAmowEuAvHwyPsQjMgxYMqkCFB4gRDJ-SaMgDL5w1sBjOVQlMTYiZc2M6DLIxOYJ2D4AXQWQCoyEMr9P4y-0gDNgIlMETJHU66UEkkzCM30ABRaAewEPTZAS8CnArkAkCCBegVuFMzaAczMKgj01DPxxIMBjMxNIMYgl8jdMiACTkJQWkFCByAfTBsy7Mw9NUzFDBTBczGXYzCKx-FTzOTYDAYIEiQggBIBcQDMigBCB5gXAECyWKezJCy7FejJAzryMMHcydMx1SkzqMLAACBCQHJG8BOADLLMyss4LNQz6sajHCzD1TYnisYsgUhfTaALcGmBcAexB0ATAehHSzUM60g0yQMlTEoJiCD7AgySs+9NmJiM-cBcRqQAbKGyas-rLsRVskLPyJnM8bMGJjMBTGb9lUDrIUx1sowGQg0stbJ3hBsjYBqyRsoyhEyFJfbOMwzPHlA6ywwAFAuQ5M2QB5AVgQUD6yrszbMcyj8B7O9Ips6tNDBZsrzK0I30osCUhcAYUHoBRQELIOM8szDJO0aiJ7KOzIc0ngLgWAWcHpB5kWQCwBQkC9ARykc1DJtQws-LNzITsFmw6zfQAuFlAyAekD5A4AYoFJyRQZgBCyPZVHNAzmrKbOKzyNdjKhz1cBhBYBkIeyA5zEcrnIpzJGFzPooxMorFIoOstbBfSVgCXPuBFM7CjVynAIzBGzRhcLJ6pQCFkg6zqMR9OfT6wZbMMBAoOIBqydcjXK2y1mFzMwJmMorEwsYsntC4yuQQnI+z4AJwFCBcAe3L1y1M4HPyyJEzHNuIPczokhgEIRhF-Sg8ljBGz-SZ3MKJiCNvw9yFMF9NlBuM2QHXgwEOAFwBGclYEWz14WUHOQQsjKN5yiUPQk2IWSK+Xgx70kjCMAcUbjN-Si88cHuBS8uAHLzUMpdWdzQjYgluJ68yuxKt28kvLLyL0MfM7yJ8ivMBZDcxXNwAjjSu10QUQIAA" target="_blank" rel="noopener">Abrir en una pestaña</a>
+  <span class="c10l1-estado" id="c10l1-estado" aria-live="polite">Sin cargar: la primera vez descarga R para el navegador (unas decenas de MB).</span>
+</div>
+<div class="c10l1-marco" id="c10l1-marco"></div>
+<p class="hint">Shinylive es un servicio gratuito de Posit que corre la aplicación en tu navegador con webR; no hay servidor. La app lee la muestra de 496 viajes (<code>viajes.csv</code>) y <code>estaciones.csv</code>, que viajan junto con el código.</p>
+<div class="readout texto" id="c10l1-out" aria-live="polite"><span>Mueve la hora de salida, cambia el barrio o el tipo de usuario: el conteo, la mediana, el gráfico y la tabla se recalculan solos. Nadie escribió un «cuando cambie el deslizador, redibuja»: Shiny vio que esas salidas leen <code>input$horas</code>, <code>input$barrio</code> e <code>input$usuario</code>.</span></div></div><div class="prose"><p>Mira el código de la aplicación del laboratorio: las cuatro salidas llaman a la misma función <code>elegidos()</code>, que filtra los viajes según las tres entradas. Funciona, pero cada vez que algo cambia la tabla se filtra cuatro veces, una por salida. Con 486 viajes no se nota. Con los 72.283 del archivo completo y diez salidas, sí. El capítulo 11 resuelve justo eso con <code>reactive()</code>.</p></div></section>
+<section><h2>Diseño de la página con bslib</h2><div class="prose"><p><code>fluidPage()</code> pone los controles uno debajo del otro. Para una herramienta que Ernesto use todos los días hace falta orden: los filtros a un costado, los números grandes arriba, cada gráfico en su recuadro, colores que no parezcan de prueba. Eso lo da <b>bslib</b>, el paquete de Posit que lleva a Shiny las piezas de <b>Bootstrap</b> (el sistema de diseño web más usado para páginas que se acomodan a la pantalla) en su versión 5.</p></div><div class="analogia"><b>Imagínalo así</b><p>Armar una página con bslib es como amoblar una casa con muebles modulares. No fabricas cada repisa: eliges un armazón (una casa con barra lateral, una con pestañas), colocas módulos estándar (tarjetas, cajas de valor, columnas) y al final pintas todo de un color. Los módulos encajan entre sí y se reacomodan solos cuando cambias de pieza, que aquí es cambiar de la pantalla grande al celular.</p></div><div class="prose"><p>Las piezas que vas a usar casi siempre:</p><ul><li><b><code>page_sidebar()</code></b>: una página con título arriba y una <b>barra lateral</b> (<i>sidebar</i>) para los controles. En el celular, la barra se pliega detrás de un botón. Para aplicaciones con varias vistas está <code>page_navbar()</code>, con una <b>barra de navegación</b> (<i>navbar</i>) y una pestaña por vista.</li><li><b><code>card()</code></b>: una <b>tarjeta</b> (<i>card</i>), un recuadro con borde que agrupa una salida y su título (<code>card_header()</code>). Puede crecer a pantalla completa con un clic si le pasas <code>full_screen = TRUE</code>.</li><li><b><code>value_box()</code></b>: una <b>caja de valor</b> (<i>value box</i>) para un número grande con su etiqueta: viajes, duración mediana, estaciones vacías.</li><li><b><code>layout_columns()</code></b>: reparte lo que contiene en columnas que se apilan cuando no caben.</li><li><b><code>bs_theme()</code></b>: el <b>tema</b> (<i>theme</i>) de toda la página. <code>bs_theme(primary = "#7a3fc4")</code> cambia el color principal; <code>bs_theme(bootswatch = "minty")</code> aplica uno de los temas listos de Bootswatch; <code>base_font = font_google("Inter")</code> cambia la fuente.</li></ul></div><figure class="fig fig-esquema" id="10-diagrama-4"><div class="lienzo"><svg viewBox="0 0 900 430" style="min-width:720px;font-variant-ligatures:none" role="img" aria-label="Una página de bslib y el código que la arma: page_sidebar pone el título arriba y una barra lateral con las entradas; layout_columns reparte tres cajas de valor en una fila; dos tarjetas con encabezado guardan el gráfico y la tabla; bs_theme cambia colores y fuentes de todo">
+<text x="20" y="24" class="t t-xs t-b t-m">LO QUE SE VE</text>
+<rect x="20" y="34" width="500" height="380" rx="10" class="caja"/>
+<rect x="20" y="34" width="500" height="40" rx="10" class="d-oper"/>
+<text x="36" y="59" class="t t-b">Viajes de RiberaBici</text>
+<rect x="30" y="84" width="140" height="320" rx="8" class="c-tra"/>
+<text x="42" y="106" class="t t-xs t-b k-tra">BARRA LATERAL</text>
+<rect x="42" y="118" width="116" height="34" rx="5" class="caja"/><text x="50" y="140" class="t t-s">Estación ▾</text>
+<rect x="42" y="162" width="116" height="34" rx="5" class="caja"/><text x="50" y="184" class="t t-s">Horas ○──●──○</text>
+<rect x="42" y="206" width="116" height="34" rx="5" class="caja"/><text x="50" y="228" class="t t-s">Fechas</text>
+<rect x="180" y="84" width="104" height="70" rx="8" class="c-apl"/><text x="190" y="104" class="t t-xs k-apl">VIAJES</text><text x="190" y="136" class="t t-b" style="font-size:20px">—</text>
+<rect x="294" y="84" width="104" height="70" rx="8" class="c-apl"/><text x="304" y="104" class="t t-xs k-apl">MINUTOS</text><text x="304" y="136" class="t t-b" style="font-size:20px">—</text>
+<rect x="408" y="84" width="104" height="70" rx="8" class="c-apl"/><text x="418" y="104" class="t t-xs k-apl">ESTACIONES</text><text x="418" y="136" class="t t-b" style="font-size:20px">—</text>
+<rect x="180" y="166" width="332" height="132" rx="8" class="c-red"/><text x="192" y="186" class="t t-s t-b">Viajes por hora</text>
+<line x1="180" y1="194" x2="512" y2="194" class="ln"/>
+<g class="k-red"><rect x="204" y="262" width="18" height="26"/><rect x="230" y="232" width="18" height="56"/><rect x="256" y="214" width="18" height="74"/><rect x="282" y="246" width="18" height="42"/><rect x="308" y="256" width="18" height="32"/><rect x="334" y="250" width="18" height="38"/><rect x="360" y="226" width="18" height="62"/><rect x="386" y="240" width="18" height="48"/><rect x="412" y="264" width="18" height="24"/></g>
+<rect x="180" y="308" width="332" height="96" rx="8" class="c-red"/><text x="192" y="328" class="t t-s t-b">Detalle</text>
+<line x1="180" y1="336" x2="512" y2="336" class="ln"/>
+<line x1="192" y1="356" x2="500" y2="356" class="ln ln-d"/><line x1="192" y1="374" x2="500" y2="374" class="ln ln-d"/><line x1="192" y1="392" x2="500" y2="392" class="ln ln-d"/>
+<text x="560" y="24" class="t t-xs t-b t-m">EL CÓDIGO QUE LA ARMA</text>
+<rect x="550" y="34" width="330" height="380" rx="10" class="caja"/>
+<text x="566" y="60" class="t t-s t-mono"><tspan class="t-b k-oper">page_sidebar</tspan>(</text>
+<text x="580" y="80" class="t t-s t-mono">title = "Viajes…",</text>
+<text x="580" y="100" class="t t-s t-mono">theme = <tspan class="t-b">bs_theme</tspan>(…),</text>
+<text x="580" y="124" class="t t-s t-mono"><tspan class="t-b k-tra">sidebar</tspan> = sidebar(</text>
+<text x="596" y="144" class="t t-s t-mono">selectInput(…),</text>
+<text x="596" y="164" class="t t-s t-mono">sliderInput(…),</text>
+<text x="596" y="184" class="t t-s t-mono">dateRangeInput(…)),</text>
+<text x="580" y="208" class="t t-s t-mono"><tspan class="t-b">layout_columns</tspan>(</text>
+<text x="596" y="228" class="t t-s t-mono"><tspan class="t-b k-apl">value_box</tspan>(…), × 3</text>
+<text x="580" y="248" class="t t-s t-mono">),</text>
+<text x="580" y="272" class="t t-s t-mono"><tspan class="t-b k-red">card</tspan>(card_header(…),</text>
+<text x="596" y="292" class="t t-s t-mono">plotOutput("grafico")),</text>
+<text x="580" y="316" class="t t-s t-mono"><tspan class="t-b k-red">card</tspan>(card_header(…),</text>
+<text x="596" y="336" class="t t-s t-mono">tableOutput("tabla"))</text>
+<text x="566" y="356" class="t t-s t-mono">)</text>
+<text x="566" y="384" class="t t-s t-m">Cada función devuelve HTML; anidarlas</text>
+<text x="566" y="402" class="t t-s t-m">es dibujar la página de afuera hacia adentro.</text>
+</svg></div><figcaption><b>Una página de bslib y el código que la arma.</b> A la izquierda, lo que ve Ernesto: el título arriba, la barra lateral morada con tres entradas, tres cajas de valor en fila (rosa) y dos tarjetas (azul) con el gráfico y la tabla. A la derecha, el código con el mismo color en cada función. Leído de arriba abajo, el código dibuja la página de afuera hacia adentro: cada función devuelve HTML que la de afuera envuelve.</figcaption></figure><div class="prose"><p>Un detalle que conviene saber pronto: por omisión <code>page_sidebar()</code> hace que el contenido llene el alto de la ventana y reparte ese alto entre las tarjetas. Con dos o tres tarjetas queda bien; con más, cada gráfico queda aplastado. <code>page_sidebar(fillable = FALSE)</code> devuelve el comportamiento de una página normal, que crece hacia abajo y se recorre con la rueda del ratón.</p></div><div class="lab" id="10-lab-2"><div class="lab-title"><span class="tag">Laboratorio</span><h3>Edita la interfaz y mira la aplicación recargarse</h3></div><p class="hint">El editor de Shinylive con una aplicación pequeña: la tabla de estaciones de RiberaBici filtrada por barrio y por capacidad. Cambia la interfaz y pulsa ▶ (o Ctrl+Shift+Enter) para volver a correrla. Ideas: cambia el título; cambia <code>primary</code> por otro color o agrega <code>bootswatch = "minty"</code> dentro de <code>bs_theme()</code>; agrega <code>radioButtons()</code> o <code>checkboxInput()</code> a la barra lateral; envuelve la tabla en <code>card(full_screen = TRUE, …)</code>; borra una coma y lee el error.</p><style>
+[id="10-lab-2"] .c10l2-marco iframe{width:100%;height:640px;border:1px solid var(--line);border-radius:8px;background:var(--card);display:block}
+[id="10-lab-2"] .c10l2-estado{font:500 .85rem var(--f-display);color:var(--muted)}
+[id="10-lab-2"] .c10l2-cod summary{cursor:pointer;font:600 .85rem var(--f-display);color:var(--accent)}
+[id="10-lab-2"] .c10l2-cod pre{margin:6px 0 0;font:.78rem/1.5 var(--f-mono);white-space:pre;overflow-x:auto;max-height:360px;overflow-y:auto;background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--c-red);border-radius:6px;padding:8px}
+[id="10-lab-2"] .btns{align-items:center}
+[id="10-lab-2"] pre,[id="10-lab-2"] code{font-variant-ligatures:none}
+[id="10-lab-2"] .btns a{font:600 .85rem var(--f-display)}
+</style>
+<details class="c10l2-cod"><summary>Ver el código de <code>app.R</code></summary><pre>library(shiny)
+library(bslib, warn.conflicts = FALSE)
+
+estaciones &lt;- read.csv(&quot;estaciones.csv&quot;)
+
+# Prueba: cambia el título, agrega una entrada, cambia el tema
+# y pulsa el botón de ejecutar del editor (arriba a la derecha)
+ui &lt;- page_sidebar(
+  title = &quot;Estaciones de RiberaBici&quot;,
+  theme = bs_theme(primary = &quot;#7a3fc4&quot;),
+  sidebar = sidebar(
+    selectInput(&quot;barrio&quot;, &quot;Barrio&quot;,
+                choices = sort(unique(estaciones$barrio))),
+    sliderInput(&quot;capacidad&quot;, &quot;Capacidad mínima (anclajes)&quot;,
+                min = 10, max = 24, value = 12)
+  ),
+  card(
+    card_header(&quot;Estaciones del barrio&quot;),
+    tableOutput(&quot;tabla&quot;)
+  )
+)
+
+server &lt;- function(input, output) {
+  output$tabla &lt;- renderTable({
+    e &lt;- estaciones[estaciones$barrio == input$barrio &amp;
+                      estaciones$capacidad &gt;= input$capacidad, ]
+    e[, c(&quot;estacion_id&quot;, &quot;nombre&quot;, &quot;capacidad&quot;, &quot;altitud_m&quot;)]
+  })
+}
+
+shinyApp(ui, server)
+</pre></details>
+<div class="btns">
+  <button type="button" class="primary" id="c10l2-abrir">Abrir el editor y la aplicación (carga R en tu navegador · tarda unos 30 s la primera vez)</button>
+  <a id="c10l2-tab" href="https://shinylive.io/r/editor/#code=NobwRAdghgtgpmAXGKAHVA6ASmANGAYwHsIAXOMpMAGwEsAjAJykYE8AKAZwAtaJWAlAB0IdJiw71OY3AAIA7iwgZiEAGZ0CpTrIC8sgGIBBADIBlAKLCIIuJ1JQCtEndkAeALSzGcKABMVTgA3diEwOwcnF05AoLDrEQBiWQAFRgBXOHooRFkCWHpaKFk4allSAFvSdOoiOSgAcx8G4vToErJmPyg5fJhC4tLyuBgoJNlWWVQazkGy+iJSAGeIWT84EoArOAJ0h0Y1obg-WlIiA-YWRgZi4upi9Z8CbihrdNp3L1RGuAB9Tlo62yjFCq3Kp2oG30YQs9kczggrnWsiwDDgzAAQrQnGFcCJZOVuCMobIpL9SET4OxUNdRmw9LIwokAOxQADMagIABZ4niwQCgSwGQKsixQQSCZxSjtSABJCDTUihMDA65EXGMsAYq7OXH4iUGw0S55EbGufScc5Ktq0ACOmXYEXh0QAJKrnAJPXyDdJAej5Yrlflvk5un4NWEAMJoeFh2QwCoQWijWSXCAEe7bTjCPD6o35+N8BkARgADHJRgAPBkAJi5ciCUGomRLNesBIE3ryLD84uNPd+RP86OVsMiCKRQ3d6rAnbz5Sg9EhAHk9oGwg4l2NZ-rrAkIFLGEF0Z9ZGo2loEew+Iq5EQ13sBLIQPr76RFS7N-dTz4II8ACqLpC7AvmCBIbJ4JRwlEiKcMATowXYbo6kQej6DeezIYwaqyAAZPOBaEVB46usGsb+LIAB86EKphZGhv4cgALrznAwC9MqCEIr8gIRpARD9D4fH0YC-h8U2pCnOkfi-DA8QsWCAC+1iKSIIg8HwrBGOg7DvHIh7How1hgIpuDgNA8BUFx0SxHghAkOQlDINZEA8X4uAQAJTBwLg064PcpD+SQuAiWGuASVJMkwLgfBQOkDTpF0YwQBYpbFrgKT3AAXsUACyUCsOcuCRhQpCMHUACsGBshVpY1rgHjMsWGA1qWpZsrgrWdfVrU1myHilhVHjFhVIipfV0bkH4zDUMVpXlbgVU1cWACcDVNRgq0ABzMrgxZbZ1FWdXV-WDcNo0pe1uBGNQ+TUH4FQ9CVnSVdVXJbQAbOtzWrcya0jZ16W9adQ0jWNpb1tG1CQiivizc9ZWvWyXLMgdjXNb16UA6tx19QNoMXalR3-uiMCxWUCMzXNL2LdVFVsul6Mte1PX1nWuMg+d4NfZGtDSRRACqSaGQC+xFLgQu0CLonuUtH1bfWTP7cy9bFvVXJfcD+Nc5du1YkuzjkPkEvC+iAqMUtzJ1d9m1bRVWNHe9HPa2Dl0HQYjg1A4fiHLIvMUE4UCcCbUtmzLtNsh9H2Mxt+1ch1au4FybMnS7hOlmtWB2H66ZFMHkvS2Fls40rW1bf9R21c7Z2uxYZa4LltBdEVJhB7IJgCUHEcVU1Ns1n1X2JyNPWpzXhPFulN1nL79w6B3ozB63c+d8HS0VStisbf38t7fVxao9XBNjYnS+yEY+SB4vbfz13a8o33Nbr7ve1ckDo9HylxYdZGRB0O0ABq6J1i4FPjfVe1Vo5oy3n1LGe8PpHS1mPY+9Z8qQgICsXAqJ6Doh6EtNkCsbarR3l1ROiCP51yOikFg9oNjrDKFgCodQsE4IjpHeqSsVr-UHuWMhOs65fRSJkMgGx-60DgJsJhaJmARy5INPuaU957xTnjJBn9doWH6CwfIjxJHYOkXg1+hCVr2z2kdNavDa77QbuibRqFKZNmsYwWx3c2RrVLldKxNYDoWPHmtTKUAcozzbgYWoPhg65Rsf4JGFUe6EOZH9UxuA2Q8PfnwrqUMYZ0L9gJGxzhHHOLXlYpWqNB49V2j4saNZ0ramws4WQy5vILQiU4qJ3dmTsNjsyCqiikkdQqSlfuDdMjQw2AAOStD5QR6Jp6jMyEEJGNYVpfWKStPeR1vF1SGnVAaxZKkdSMPYWgIyFpTMYDMuZCze7FI+qreq5TNkDRrDsyp9ZTnnLgPMjKmQzmoVmR8hZXI3Gxy2mlRJ5i6ofQGpCtKIgTJMSAA" target="_blank" rel="noopener">Abrir en una pestaña</a>
+  <span class="c10l2-estado" id="c10l2-estado" aria-live="polite">Sin cargar: la primera vez descarga R para el navegador (unas decenas de MB).</span>
+</div>
+<div class="c10l2-marco" id="c10l2-marco"></div>
+<p class="hint">Shinylive es un servicio gratuito de Posit que corre la aplicación en tu navegador con webR; no hay servidor. La app lee la muestra de 496 viajes (<code>viajes.csv</code>) y <code>estaciones.csv</code>, que viajan junto con el código.</p>
+<div class="readout texto" id="c10l2-out" aria-live="polite"><span>El código está a la izquierda (arriba en el celular) y la aplicación al lado. Cambia algo y pulsa el botón de ejecutar del editor (▶, o Ctrl+Shift+Enter): la aplicación se vuelve a armar con tu interfaz. Si rompes algo, el error aparece en la consola de abajo.</span></div></div><div class="practica"><div class="practica-title"><span class="tag">En la terminal</span><h3>Tu primera aplicación Shiny en tu equipo</h3></div><p>Vas a correr en tu computador una versión de la aplicación con los 72.283 viajes completos, con hora, barrio y fechas. Necesitas R, RStudio o Positron y la carpeta <code>~/bicis</code> con <code>datos/</code> del capítulo 01.</p><ol class="steps"><li><span>En la consola de R, instala los dos paquetes (una sola vez): <code>install.packages(c("shiny", "bslib"))</code>.</span></li><li><span>Crea la carpeta <code>~/bicis/app-viajes</code> y, dentro, el archivo <code>limpiar.R</code> con la regla de limpieza del curso:</span></li></ol><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln"># ~/bicis/app-viajes/limpiar.R</span>
+<span class="ln">limpiar &lt;- function(v) {</span>
+<span class="ln">  v &lt;- v[!duplicated(v), ]                       # duplicados exactos</span>
+<span class="ln">  v &lt;- v[v$estacion_origen != "E99", ]           # movimientos del taller</span>
+<span class="ln">  v &lt;- v[!is.na(v$fin), ]                        # bicis sin devolver</span>
+<span class="ln">  v$inicio &lt;- as.POSIXct(v$inicio, tz = "UTC")</span>
+<span class="ln">  v$fin &lt;- as.POSIXct(v$fin, tz = "UTC")</span>
+<span class="ln">  r &lt;- v$estacion_destino == "E17" &amp; v$estacion_origen != "E17" &amp;</span>
+<span class="ln">    v$inicio &gt;= as.POSIXct("2026-05-04", tz = "UTC") &amp;</span>
+<span class="ln">    v$inicio &lt; as.POSIXct("2026-05-18", tz = "UTC")</span>
+<span class="ln">  v$fin[r] &lt;- v$fin[r] + 3600                    # el reloj atrasado de E17</span>
+<span class="ln">  v$usuario &lt;- tolower(trimws(v$usuario))</span>
+<span class="ln">  v$duracion_min &lt;- as.numeric(difftime(v$fin, v$inicio, units = "mins"))</span>
+<span class="ln">  v &lt;- v[v$duracion_min &gt;= 1 &amp; v$duracion_min &lt;= 720, ]</span>
+<span class="ln">  v$anio_nacimiento[v$anio_nacimiento == 1900] &lt;- NA</span>
+<span class="ln">  v</span>
+<span class="ln">}</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><ol class="steps" start="3" style="counter-reset:st 2"><li><span>En la misma carpeta, crea <code>app.R</code>:</span></li></ol><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln"># ~/bicis/app-viajes/app.R</span>
+<span class="ln">library(shiny)</span>
+<span class="ln">library(bslib)</span>
+<span class="ln"></span>
+<span class="ln">source("limpiar.R")</span>
+<span class="ln">estaciones &lt;- read.csv("../datos/estaciones.csv")</span>
+<span class="ln">viajes &lt;- limpiar(read.csv("../datos/viajes.csv", na.strings = ""))</span>
+<span class="ln">viajes$hora &lt;- as.integer(format(viajes$inicio, "%H"))</span>
+<span class="ln">viajes$barrio &lt;- estaciones$barrio[match(viajes$estacion_origen,</span>
+<span class="ln">                                         estaciones$estacion_id)]</span>
+<span class="ln"></span>
+<span class="ln">ui &lt;- page_sidebar(</span>
+<span class="ln">  title = "Viajes de RiberaBici",</span>
+<span class="ln">  theme = bs_theme(primary = "#7a3fc4"),</span>
+<span class="ln">  sidebar = sidebar(</span>
+<span class="ln">    sliderInput("horas", "Hora de salida", min = 6, max = 23,</span>
+<span class="ln">                value = c(6, 23), step = 1),</span>
+<span class="ln">    selectInput("barrio", "Barrio de origen",</span>
+<span class="ln">                choices = c("Todos", sort(unique(estaciones$barrio)))),</span>
+<span class="ln">    dateRangeInput("fechas", "Período", start = "2026-03-01",</span>
+<span class="ln">                   end = "2026-08-31", language = "es", separator = "a")</span>
+<span class="ln">  ),</span>
+<span class="ln">  layout_columns(</span>
+<span class="ln">    value_box("Viajes", textOutput("n_viajes")),</span>
+<span class="ln">    value_box("Duración mediana", textOutput("mediana"))</span>
+<span class="ln">  ),</span>
+<span class="ln">  card(card_header("Viajes por hora de salida"), plotOutput("por_hora"))</span>
+<span class="ln">)</span>
+<span class="ln"></span>
+<span class="ln">server &lt;- function(input, output) {</span>
+<span class="ln">  elegidos &lt;- function() {</span>
+<span class="ln">    dia &lt;- as.Date(viajes$inicio)</span>
+<span class="ln">    v &lt;- viajes[viajes$hora &gt;= input$horas[1] &amp; viajes$hora &lt;= input$horas[2] &amp;</span>
+<span class="ln">                  dia &gt;= input$fechas[1] &amp; dia &lt;= input$fechas[2], ]</span>
+<span class="ln">    if (input$barrio != "Todos") v &lt;- v[v$barrio == input$barrio, ]</span>
+<span class="ln">    v</span>
+<span class="ln">  }</span>
+<span class="ln">  output$n_viajes &lt;- renderText(format(nrow(elegidos()), big.mark = ".",</span>
+<span class="ln">                                             decimal.mark = ","))</span>
+<span class="ln">  output$mediana &lt;- renderText({</span>
+<span class="ln">    m &lt;- median(elegidos()$duracion_min)</span>
+<span class="ln">    paste(format(round(m, 2), decimal.mark = ","), "min")</span>
+<span class="ln">  })</span>
+<span class="ln">  output$por_hora &lt;- renderPlot({</span>
+<span class="ln">    barplot(table(factor(elegidos()$hora, levels = 6:23)),</span>
+<span class="ln">            col = "#7a3fc4", border = NA, las = 1,</span>
+<span class="ln">            xlab = "Hora de salida", ylab = "Viajes")</span>
+<span class="ln">  })</span>
+<span class="ln">}</span>
+<span class="ln"></span>
+<span class="ln">shinyApp(ui, server)</span></code></pre><button type="button" class="ver-todo" aria-expanded="false">Ver las 51 líneas</button><button type="button" class="copiar copiar-todo">Copiar</button></div><ol class="steps" start="4" style="counter-reset:st 3"><li><span>Córrela. En RStudio o Positron, abre <code>app.R</code> y pulsa el botón «Run App» (en Positron, el triángulo de ejecutar con la opción de aplicación). Desde la consola de R sirve <code>shiny::runApp("~/bicis/app-viajes")</code>. Desde una terminal, con el mismo comando en cualquier sistema:</span></li></ol><div class="cmds"><div class="cmd-panel" data-so="win mac linux"><div class="cmd-l"><code>Rscript -e "shiny::runApp('~/bicis/app-viajes', launch.browser = TRUE)"</code><button type="button" class="copiar">Copiar</button></div></div></div><ol class="steps" start="5" style="counter-reset:st 4"><li><span>Mira la consola: dice <code>Listening on http://127.0.0.1:</code> y un número de puerto. Esa es la dirección local de tu aplicación. Ábrela en otra pestaña y mueve los controles en las dos.</span></li><li><span>Para detenerla, pulsa Esc en la consola (o Ctrl+C en la terminal). Recarga la página: ya no responde.</span></li></ol><p><b>Qué observar:</b> con todo el período y todos los barrios, la caja de viajes dice 70.796 y la mediana 18,65 min, las cifras de referencia del curso. Elige Las Lomas: 10.013 viajes. La hora pico de la mañana aparece entre las 7 y las 8. Mientras la aplicación corre, la consola de R queda ocupada: ese proceso de R <b>es</b> el servidor, y cada pestaña que abres es una sesión distinta dentro de él. Al detenerlo, la página se pone gris porque el WebSocket se cerró.</p></div><div class="ml"><b>En la práctica</b><p>Gabriela corrió la aplicación en su computador y llamó a Ernesto para mostrársela en una videollamada. A los cinco minutos él mismo había confirmado, moviendo la hora, lo que Gabriela vio en la matriz origen-destino del capítulo 03: entre las 6 y las 10 de la mañana salen muchos viajes de Las Lomas y casi ninguno llega. Le pidió la dirección para usarla él mismo, y ahí apareció el límite: <code>127.0.0.1</code> es el computador de Gabriela, y nadie más puede abrirla. Publicarla es el tema del capítulo 13. Mientras tanto, Gabriela anotó las dos cosas que Ernesto preguntó y la aplicación no respondía: las llegadas (no solo las salidas) y el balance por estación.</p></div></section>
+<section><h2>Shiny para Python: la misma idea en otro lenguaje</h2><div class="prose"><p>Desde 2022 existe <b>Shiny para Python</b> (<i>Shiny for Python</i>), también de Posit. No es una traducción línea por línea sino la misma arquitectura: una interfaz declarada, un servidor que responde, el mismo WebSocket y el mismo modelo reactivo que verás en el capítulo 11. Las funciones de bslib están incluidas desde el principio con nombres casi iguales (<code>ui.page_sidebar</code>, <code>ui.card</code>, <code>ui.value_box</code>).</p><p>Cambian tres cosas de forma, todas propias de Python. Las entradas se leen <b>llamándolas</b>: <code>input.horas()</code> en lugar de <code>input$horas</code>. Las salidas no se asignan a una lista: se escribe una función con el nombre del id y se la marca con un <b>decorador</b> (<i>decorator</i>), una línea con <code>@</code> arriba de la función, como <code>@render.plot</code>. Y el gráfico lo dibuja matplotlib (u otra biblioteca de Python) en lugar de R.</p><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln"># R</span>
+<span class="ln">output$n_viajes &lt;- renderText(nrow(elegidos()))</span>
+<span class="ln"></span>
+<span class="ln"># Python</span>
+<span class="ln">@render.text</span>
+<span class="ln">def n_viajes():</span>
+<span class="ln">    return len(elegidos())</span></code></pre><button type="button" class="copiar copiar-todo">Copiar</button></div><p>Hay además un modo abreviado, <b>Shiny Express</b>, donde la interfaz y el servidor se mezclan en un solo guion. Es cómodo para prototipos; para aplicaciones que crecen, la forma con <code>App(app_ui, server)</code> se parece más a la de R y se ordena mejor. ¿Cuál conviene? Si el análisis ya está en R (modelos, gráficos de ggplot2, paquetes de CRAN), Shiny para R; si el equipo y sus bibliotecas viven en Python, Shiny para Python, sin cambiar de modelo mental. El lenguaje en sí está en <a href="https://aaramirez.github.io/programacion-python/temario.html" target="_blank" rel="noopener">Programación en Python</a>.</p></div><div class="practica"><div class="practica-title"><span class="tag">En la terminal</span><h3>La misma aplicación en Shiny para Python</h3></div><p>Vas a correr la aplicación de los viajes escrita en Python, con un deslizador de horas, una caja de valor y el gráfico por hora. Necesitas Python 3.10 o posterior y la carpeta <code>~/bicis/datos</code> del capítulo 01.</p><ol class="steps"><li><span>Crea la carpeta <code>~/bicis/app-py</code>, entra en ella desde una terminal y crea un entorno virtual con los paquetes:</span></li></ol><div class="cmds"><div class="cmd-tabs" role="tablist" aria-label="Sistema operativo"><button type="button" role="tab" data-so="win">Windows</button><button type="button" role="tab" data-so="mac linux">macOS y Linux</button></div><div class="cmd-panel" role="tabpanel" data-so="win"><div class="cmd-l"><code>cd $HOME\Documents\bicis\app-py</code><button type="button" class="copiar">Copiar</button></div><div class="cmd-l"><code>python -m venv .venv</code><button type="button" class="copiar">Copiar</button></div><div class="cmd-l"><code>.venv\Scripts\activate</code><button type="button" class="copiar">Copiar</button></div><div class="cmd-l"><code>pip install shiny pandas matplotlib</code><button type="button" class="copiar">Copiar</button></div></div><div class="cmd-panel" role="tabpanel" data-so="mac linux"><div class="cmd-l"><code>cd ~/bicis/app-py</code><button type="button" class="copiar">Copiar</button></div><div class="cmd-l"><code>python3 -m venv .venv</code><button type="button" class="copiar">Copiar</button></div><div class="cmd-l"><code>source .venv/bin/activate</code><button type="button" class="copiar">Copiar</button></div><div class="cmd-l"><code>pip install shiny pandas matplotlib</code><button type="button" class="copiar">Copiar</button></div></div></div><ol class="steps" start="2" style="counter-reset:st 1"><li><span>Guarda este <code>app.py</code> en la carpeta:</span></li></ol><div class="code-copia code-lineas"><pre tabindex="0"><code><span class="ln"># ~/bicis/app-py/app.py: la misma idea en Shiny para Python</span>
+<span class="ln">import pandas as pd</span>
+<span class="ln">import matplotlib.pyplot as plt</span>
+<span class="ln">from shiny import App, render, ui</span>
+<span class="ln"></span>
+<span class="ln">viajes = pd.read_csv("../datos/viajes.csv", parse_dates=["inicio", "fin"])</span>
+<span class="ln">viajes = viajes.drop_duplicates()</span>
+<span class="ln">viajes = viajes[(viajes["estacion_origen"] != "E99") &amp; viajes["fin"].notna()].copy()</span>
+<span class="ln">reloj = ((viajes["estacion_destino"] == "E17") &amp; (viajes["estacion_origen"] != "E17")</span>
+<span class="ln">         &amp; viajes["inicio"].between("2026-05-04", "2026-05-17 23:59:59"))</span>
+<span class="ln">viajes.loc[reloj, "fin"] += pd.Timedelta(hours=1)</span>
+<span class="ln">viajes["duracion_min"] = (viajes["fin"] - viajes["inicio"]).dt.total_seconds() / 60</span>
+<span class="ln">viajes = viajes[viajes["duracion_min"].between(1, 720)]</span>
+<span class="ln">viajes["hora"] = viajes["inicio"].dt.hour</span>
+<span class="ln"></span>
+<span class="ln">app_ui = ui.page_sidebar(</span>
+<span class="ln">    ui.sidebar(</span>
+<span class="ln">        ui.input_slider("horas", "Hora de salida", min=6, max=23, value=(6, 23)),</span>
+<span class="ln">    ),</span>
+<span class="ln">    ui.value_box("Viajes", ui.output_text("n_viajes")),</span>
+<span class="ln">    ui.card(ui.card_header("Viajes por hora de salida"), ui.output_plot("por_hora")),</span>
+<span class="ln">    title="Viajes de RiberaBici (Python)",</span>
+<span class="ln">)</span>
+<span class="ln"></span>
+<span class="ln">def server(input, output, session):</span>
+<span class="ln">    def elegidos():</span>
+<span class="ln">        desde, hasta = input.horas()</span>
+<span class="ln">        return viajes[viajes["hora"].between(desde, hasta)]</span>
+<span class="ln"></span>
+<span class="ln">    @render.text</span>
+<span class="ln">    def n_viajes():</span>
+<span class="ln">        return f"{len(elegidos()):,}".replace(",", ".")</span>
+<span class="ln"></span>
+<span class="ln">    @render.plot</span>
+<span class="ln">    def por_hora():</span>
+<span class="ln">        conteo = elegidos()["hora"].value_counts().sort_index()</span>
+<span class="ln">        fig, ax = plt.subplots()</span>
+<span class="ln">        ax.bar(conteo.index, conteo.values, color="#7a3fc4")</span>
+<span class="ln">        ax.set_xlabel("Hora de salida")</span>
+<span class="ln">        ax.set_ylabel("Viajes")</span>
+<span class="ln">        return fig</span>
+<span class="ln"></span>
+<span class="ln">app = App(app_ui, server)</span></code></pre><button type="button" class="ver-todo" aria-expanded="false">Ver las 43 líneas</button><button type="button" class="copiar copiar-todo">Copiar</button></div><ol class="steps" start="3" style="counter-reset:st 2"><li><span>Córrela con recarga automática y abre la dirección que imprime (por omisión, <code>http://127.0.0.1:8000</code>):</span></li></ol><div class="cmds"><div class="cmd-panel" data-so="win mac linux"><div class="cmd-l"><code>shiny run --reload app.py</code><button type="button" class="copiar">Copiar</button></div></div></div><ol class="steps" start="4" style="counter-reset:st 3"><li><span>Con la aplicación abierta, cambia el título en <code>app.py</code> y guarda: la página se recarga sola. Detén el servidor con Ctrl+C.</span></li></ol><p><b>Qué observar:</b> la caja de viajes marca 70.796, igual que la aplicación de R, porque la limpieza es la misma regla escrita con pandas. Compara los dos archivos: <code>ui.page_sidebar</code> frente a <code>page_sidebar</code>, <code>input.horas()</code> frente a <code>input$horas</code>, <code>@render.text</code> frente a <code>output$n_viajes &lt;- renderText()</code>. La forma cambia; la arquitectura (interfaz, servidor, ids que los unen) es idéntica.</p></div></section>
+<section><h2>La idea clave</h2><div class="prose"><p>Una aplicación Shiny son dos declaraciones y un cable. La interfaz dice qué se ve: entradas con un id y huecos de salida con otro. El servidor dice cómo se calcula cada salida a partir de <code>input</code>. El id une las dos partes, y Shiny se encarga de la red: un WebSocket que lleva cada cambio y trae cada resultado, sin recargar la página. Con bslib la página toma forma de herramienta (barra lateral, tarjetas, cajas de valor, un tema), y la misma idea existe en Python. Lo que todavía no sabes es <b>cómo decide Shiny qué volver a calcular</b>: eso es la reactividad, el capítulo siguiente.</p></div></section>
+<section><h2>Pruébate</h2><div class="quiz"><h3>Pruébate</h3><details><summary>¿Qué diferencia hay entre <code>ui</code> y <code>server</code> en una aplicación Shiny?</summary><p><code>ui</code> es un objeto que describe la página (se convierte en HTML una vez); <code>server</code> es una función que Shiny llama una vez por sesión y que contiene el código que calcula cada salida a partir de <code>input</code>.</p></details><details><summary>Escribiste <code>plotOutput("grafico")</code> en la interfaz y <code>output$grafica &lt;- renderPlot(...)</code> en el servidor. ¿Qué pasa?</summary><p>El hueco del gráfico queda vacío y no aparece ningún error: los ids no coinciden, así que Shiny no sabe que esa salida va en ese hueco.</p></details><details><summary>¿Por qué conviene leer el archivo de viajes fuera de la función <code>server</code>?</summary><p>Porque lo que está fuera se ejecuta una sola vez al arrancar y lo comparten todas las sesiones; dentro del servidor, se leería una vez por cada persona que abra la aplicación.</p></details><details><summary>Una <code>selectInput()</code> tiene como opciones los números del 1 al 12. ¿Qué tipo de valor recibe el servidor?</summary><p>Texto, por ejemplo <code>"7"</code>. Las listas desplegables siempre devuelven texto; hay que convertirlo con <code>as.integer()</code> antes de comparar con una columna numérica.</p></details><details><summary>¿Qué viaja por el WebSocket cuando la persona mueve un deslizador?</summary><p>Solo el valor nuevo de esa entrada, como un mensaje JSON corto. De vuelta viajan solo las salidas que dependen de ella, ya calculadas (un gráfico como imagen, un texto).</p></details><details><summary>¿En qué caso no conviene publicar con Shinylive?</summary><p>Cuando los datos son confidenciales o muy grandes: con Shinylive la aplicación y sus datos se descargan al navegador de cada visitante. También si necesita paquetes que no existen para webR o conectarse a una base de datos interna.</p></details></div></section>
+<section><h2>Para investigar</h2><div class="investiga"><h3>Para investigar</h3><p class="hint">Estas preguntas no se responden en el capítulo: búscalas por tu cuenta.</p><ol><li>¿En qué se diferencia un WebSocket de una petición HTTP normal, y qué es el «apretón de manos» (<i>handshake</i>) con que empieza?<small>Pista: busca «WebSocket upgrade header» y el <a href="https://www.rfc-editor.org/rfc/rfc6455" target="_blank" rel="noopener">RFC 6455</a>.</small></li><li>¿Qué es httpuv y qué trabajo hace por debajo de Shiny?<small>Pista: busca el paquete en CRAN y quién lo mantiene.</small></li><li>¿Qué son los puntos de quiebre (<i>breakpoints</i>) de Bootstrap y a qué ancho se pliega la barra lateral de <code>page_sidebar()</code>?<small>Pista: documentación de Bootstrap 5, «Breakpoints».</small></li><li>¿Por qué una aplicación en Shinylive no puede leer libremente una dirección web de otro sitio? Investiga qué es CORS.<small>Pista: «Cross-Origin Resource Sharing».</small></li><li>¿Cómo se escriben en JSON un número, un texto, una lista y un objeto con nombres? Compáralo con una lista de R.<small>Pista: json.org.</small></li></ol></div></section>
+<section><h2>Para saber más</h2><div class="vids"><span>Para saber más</span><a class="vid" href="https://mastering-shiny.org/basic-app.html" target="_blank" rel="noopener">Mastering Shiny, capítulo 1: tu primera aplicación <small>lectura</small></a><a class="vid" href="https://shiny.posit.co/r/getstarted/" target="_blank" rel="noopener">Primeros pasos con Shiny para R (Posit) <small>guía</small></a><a class="vid" href="https://rstudio.github.io/bslib/" target="_blank" rel="noopener">bslib: diseños, tarjetas y temas <small>documentación</small></a><a class="vid" href="https://shiny.posit.co/py/" target="_blank" rel="noopener">Shiny para Python <small>documentación</small></a></div></section>
+<label class="got"><input type="checkbox" id="got"> Lo tengo claro</label>
+<nav class="pager" id="pager" aria-label="Capítulo anterior y siguiente"></nav>
+</main>
+</div>
+<footer><span>Curso abierto de aaramirez.github.io.</span><span>Sitio publicado: <a href="https://github.com/aaramirez/programacion-r" target="_blank" rel="noopener">github.com/aaramirez/programacion-r</a></span></footer>
+</div>
+<script src="assets/lab.js"></script>
+<script>
+(function(){
+  const {$}=window.Lab;
+  const raiz=document.querySelector('[id="10-lab-3"]');
+  const EST=['Plaza Mayor','Ciudad Universitaria','Mirador','Puente Viejo'];
+  const q=s=>'"'+s+'"';
+  const vec=(xs,f)=>xs.length===1?f(xs[0]):'c('+xs.map((x,i)=>(i&&i%2===0?'\n              ':'')+f(x)).join(', ')+')';
+  // Imprime un vector como lo haría R en la consola, con su índice [1]
+  const pr=xs=>'[1] '+xs.join(' ');
+  const TIPOS={
+    slider:{n:'sliderInput: un número',
+      cod:'sliderInput("hora", "Hora del día",\n            min = 0, max = 23, value = 8)',
+      html:'<label for="c10l3-a">Hora del día <output id="c10l3-ao"></output></label><input id="c10l3-a" type="range" min="0" max="23" value="8">',
+      val:()=>{const v=$('#c10l3-a').value;$('#c10l3-ao').textContent=v;return ['> input$hora',pr([v]),'> class(input$hora)',pr([q('integer')])];},
+      ex:'Un deslizador devuelve un número. Ojo: es un vector de largo uno, como todo en R, y se usa directo en un filtro: <code>viajes[viajes$hora >= input$hora, ]</code>.'},
+    rango:{n:'sliderInput: un rango',
+      cod:'sliderInput("horas", "Horas",\n            min = 0, max = 23, value = c(7, 9))',
+      html:'<label>Horas <output id="c10l3-ao"></output></label><input id="c10l3-a" type="range" min="0" max="23" value="7" aria-label="Desde"><input id="c10l3-b" type="range" min="0" max="23" value="9" aria-label="Hasta">',
+      val:()=>{let a=+$('#c10l3-a').value,b=+$('#c10l3-b').value;if(a>b)[a,b]=[b,a];$('#c10l3-ao').textContent=a+' a '+b;return ['> input$horas',pr([a,b]),'> length(input$horas)',pr([2])];},
+      ex:'Si <code>value</code> tiene dos números, el deslizador tiene dos manijas y devuelve un vector de largo dos: el desde en <code>input$horas[1]</code> y el hasta en <code>input$horas[2]</code>.'},
+    select:{n:'selectInput: una opción',
+      cod:'selectInput("estacion", "Estación",\n            choices = '+vec(EST,q)+')',
+      html:'<label for="c10l3-a">Estación</label><select id="c10l3-a">'+EST.map(e=>'<option>'+e+'</option>').join('')+'</select>',
+      val:()=>['> input$estacion',pr([q($('#c10l3-a').value)]),'> class(input$estacion)',pr([q('character')])],
+      ex:'Una lista desplegable devuelve siempre texto, aunque las opciones parezcan números. Si las opciones son <code>1:12</code>, recibes <code>"7"</code> y hay que convertirlo con <code>as.integer()</code>.'},
+    multi:{n:'selectInput con multiple = TRUE',
+      cod:'selectInput("estaciones", "Estaciones",\n            choices = '+vec(EST,q)+',\n            multiple = TRUE)',
+      html:'<span>Estaciones (marca varias)</span><div class="fila">'+EST.map((e,i)=>'<label><input type="checkbox" value="'+e+'"'+(i<2?' checked':'')+'> '+e+'</label>').join('')+'</div>',
+      val:()=>{const xs=[...$('#c10l3-wid').querySelectorAll('input:checked')].map(i=>q(i.value));return xs.length?['> input$estaciones',pr(xs),'> length(input$estaciones)',pr([xs.length])]:['> input$estaciones','NULL'];},
+      ex:'Con varias opciones el valor es un vector de texto de cualquier largo, y <b>NULL</b> si no hay nada marcado. Por eso se filtra con <code>%in%</code> y se protege con <code>req(input$estaciones)</code> (capítulo 12). Desmarca todo y mira.'},
+    check:{n:'checkboxInput: sí o no',
+      cod:'checkboxInput("finde", "Solo fines de semana",\n              value = FALSE)',
+      html:'<label class="fila"><input type="checkbox" id="c10l3-a"> Solo fines de semana</label>',
+      val:()=>['> input$finde',pr([$('#c10l3-a').checked?'TRUE':'FALSE'])],
+      ex:'Una casilla devuelve un lógico de largo uno, listo para un <code>if (input$finde)</code>.'},
+    radio:{n:'radioButtons: una entre pocas',
+      cod:'radioButtons("tipo", "Usuarios",\n             choices = c("Todos" = "todos",\n                         "Abonados" = "abonado",\n                         "Ocasionales" = "ocasional"))',
+      html:'<span>Usuarios</span><div class="fila"><label><input type="radio" name="c10l3-r" value="todos" checked> Todos</label><label><input type="radio" name="c10l3-r" value="abonado"> Abonados</label><label><input type="radio" name="c10l3-r" value="ocasional"> Ocasionales</label></div>',
+      val:()=>['> input$tipo',pr([q($('#c10l3-wid').querySelector('input:checked').value)])],
+      ex:'Con un vector con nombres, la persona ve el nombre («Abonados») y el servidor recibe el valor (<code>"abonado"</code>). Así la interfaz puede hablar como la gente y el código como los datos.'},
+    numero:{n:'numericInput: un número escrito',
+      cod:'numericInput("minimo", "Duración mínima (min)",\n             value = 2, min = 0, max = 120)',
+      html:'<label for="c10l3-a">Duración mínima (min)</label><input id="c10l3-a" type="number" value="2" min="0" max="120">',
+      val:()=>{const v=$('#c10l3-a').value;return ['> input$minimo',pr([v===''?'NA':v])];},
+      ex:'Si la persona borra la caja, el servidor recibe <code>NA</code>, no un cero. Bórrala y mira: es la primera fuente de errores en una aplicación.'},
+    fecha:{n:'dateRangeInput: un rango de fechas',
+      cod:'dateRangeInput("fechas", "Período",\n               start = "2026-03-01", end = "2026-08-31")',
+      html:'<label>Período</label><div class="fila"><input id="c10l3-a" type="date" value="2026-03-01" aria-label="Desde"><input id="c10l3-b" type="date" value="2026-08-31" aria-label="Hasta"></div>',
+      val:()=>['> input$fechas',pr([q($('#c10l3-a').value||'NA'),q($('#c10l3-b').value||'NA')]),'> class(input$fechas)',pr([q('Date')])],
+      ex:'Las fechas llegan como objetos <code>Date</code> de R (no como texto), así que se comparan directo con una columna de fechas: <code>fecha >= input$fechas[1]</code>.'},
+    archivo:{n:'fileInput: subir un archivo',
+      cod:'fileInput("archivo", "Sube un CSV de viajes",\n          accept = ".csv")',
+      html:'<label for="c10l3-a">Sube un CSV de viajes</label><input id="c10l3-a" type="file" accept=".csv">',
+      val:()=>{const f=$('#c10l3-a').files[0];if(!f)return ['> input$archivo','NULL'];return ['> input$archivo','  name       size  type      datapath','1 '+f.name.slice(0,18)+' '+f.size+' '+(f.type||'text/csv')+' /tmp/Rtmp…/0.csv'];},
+      ex:'Un archivo llega como un data frame con una fila por archivo: nombre, tamaño, tipo y <code>datapath</code>, la ruta temporal donde el servidor lo guardó. Se lee con <code>read.csv(input$archivo$datapath)</code>. El archivo no sale de tu equipo: este laboratorio solo lee su nombre y su tamaño.'},
+    boton:{n:'actionButton: un botón',
+      cod:'actionButton("actualizar", "Actualizar")',
+      html:'<button type="button" id="c10l3-a" class="primary">Actualizar</button>',
+      val:()=>['> input$actualizar',pr([CL]),'> class(input$actualizar)',pr([q('shinyActionButtonValue'),q('integer')])],
+      ex:'Un botón no devuelve TRUE ni FALSE: devuelve cuántas veces se pulsó. El número en sí casi nunca importa; lo que importa es que cambie, y el capítulo 11 lo usa con <code>observeEvent()</code> y <code>bindEvent()</code>.'}
+  };
+  let CL=0;
+  const sel=$('#c10l3-tipo');
+  for(const k in TIPOS)sel.add(new Option(TIPOS[k].n,k));
+  function mostrar(){const T=TIPOS[sel.value];$('#c10l3-val').textContent=T.val().join('\n');}
+  function cargar(){
+    const T=TIPOS[sel.value];CL=0;
+    $('#c10l3-cod').textContent=T.cod;$('#c10l3-wid').innerHTML=T.html;$('#c10l3-out').innerHTML='<span>'+T.ex+'</span>';
+    const w=$('#c10l3-wid');
+    w.querySelectorAll('input,select').forEach(e=>{e.addEventListener('input',mostrar);e.addEventListener('change',mostrar);});
+    const b=w.querySelector('button');if(b)b.addEventListener('click',()=>{CL++;mostrar();});
+    mostrar();
+  }
+  sel.addEventListener('change',cargar);cargar();
+})();
+</script>
+<script>
+(function(){
+  const {$}=window.Lab;
+  const raiz=document.querySelector('[id="10-lab-1"]');
+  const URL_APP=$('#c10l1-tab').href;
+  $('#c10l1-abrir').addEventListener('click',()=>{
+    const m=$('#c10l1-marco');if(m.querySelector('iframe'))return;
+    const f=document.createElement('iframe');f.src=URL_APP;f.title='Aplicación Shiny en Shinylive';f.setAttribute('allow','clipboard-write');
+    m.appendChild(f);$('#c10l1-abrir').disabled=true;
+    $('#c10l1-estado').textContent='Cargando R en tu navegador… el recuadro se llena cuando la aplicación arranca.';
+    f.addEventListener('load',()=>{$('#c10l1-estado').textContent='Shinylive cargado: si el recuadro sigue en blanco, R todavía está arrancando (espera unos segundos más).';});
+  });
+})();
+</script>
+<script>
+(function(){
+  const {$}=window.Lab;
+  const raiz=document.querySelector('[id="10-lab-2"]');
+  const URL_APP=$('#c10l2-tab').href;
+  $('#c10l2-abrir').addEventListener('click',()=>{
+    const m=$('#c10l2-marco');if(m.querySelector('iframe'))return;
+    const f=document.createElement('iframe');f.src=URL_APP;f.title='Aplicación Shiny en Shinylive';f.setAttribute('allow','clipboard-write');
+    m.appendChild(f);$('#c10l2-abrir').disabled=true;
+    $('#c10l2-estado').textContent='Cargando R en tu navegador… el recuadro se llena cuando la aplicación arranca.';
+    f.addEventListener('load',()=>{$('#c10l2-estado').textContent='Shinylive cargado: si el recuadro sigue en blanco, R todavía está arrancando (espera unos segundos más).';});
+  });
+})();
+</script>
+</body>
+</html>
